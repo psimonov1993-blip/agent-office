@@ -142,6 +142,9 @@ class BrowserTests(unittest.TestCase):
         data = snapshot()
         for sid in ('rest-1', 'rest-2'):
             data['agents'].append({'id': sid, 'name': sid, 'status': 'done', 'event_at': data['generated_at']})
+        # Seat the fixture first: arrival and spontaneous breaks are tested separately.
+        # Waiting for all actors to sit simultaneously races their independent schedules.
+        self.page.evaluate('d => window.agentOffice.applySnapshot(d, {static:true})', data)
         self.page.evaluate('''d => {
           const pulse = () => {
             d.generated_at = new Date().toISOString();
@@ -150,7 +153,6 @@ class BrowserTests(unittest.TestCase):
           };
           pulse(); window.testPulse = setInterval(pulse, 1000);
         }''', data)
-        self.page.wait_for_function('() => window.agentOffice.getState().actors.every(a => a.pose === "seated")', timeout=25000)
         self.page.locator('#btnCoffee').click()
         self.page.wait_for_function('() => window.agentOffice.getState().actors.some(a => a.pose === "walking")', timeout=15000)
         codex = next(a for a in self.state()['actors'] if a['id'] == 'codex')
