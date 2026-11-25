@@ -20,7 +20,7 @@ class PortableTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="agent office тест ")
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.now = observer.utc_now()
 
     def source(self, sid="alice", kind="state", **extra):
@@ -124,7 +124,8 @@ class PortableTests(unittest.TestCase):
         self.write_state(source)
         config_path = self.root / "config.json"
         monitor.save_config(config_path, self.config([source]))
-        result = subprocess.run([sys.executable, str(ROOT / "office.py"), "--config", str(config_path), "--once"], capture_output=True)
+        env = dict(os.environ, PYTHONIOENCODING="cp1252")
+        result = subprocess.run([sys.executable, str(ROOT / "office.py"), "--config", str(config_path), "--once"], capture_output=True, env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads((self.root / ".runtime" / "agent-office.json").read_text(encoding="utf-8"))
         self.assertEqual(data["agents"][0]["id"], "alice")

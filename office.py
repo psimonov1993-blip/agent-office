@@ -352,6 +352,7 @@ def graphical(config_path):
 
 
 def main(argv=None):
+    observer._configure_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=ROOT / "config.json")
     parser.add_argument("--headless", action="store_true", help="Наблюдение без окна настройки")
