@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "my-codex",
+      "name": "Codex",
+      "role": "Разработка",
+      "task": "Мой проект",
+      "kind": "codex",
+      "path": "~/path/to/session.jsonl",
+      "helpers": true
+    },
+    {
+      "id": "my-agent",
+      "name": "Мой агент",
+      "role": "Проверка",
+      "task": "Мой проект",
+      "kind": "state",
+      "path": "./examples/agent-state.json"
+    }
+  ]
+}

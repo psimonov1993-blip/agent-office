@@ -1,0 +1,1955 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self' file:; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Agent Office</title>
+<meta name="description" content="Уютный 3D офис с агентами Codex и Claude. Показывает только честные статусы из событий.">
+<style>
+:root{
+  --s-25:2px;--s-50:4px;--s-75:8px;--s-100:12px;--s-200:16px;--s-300:24px;--s-400:32px;--s-500:40px;--s-600:48px;
+  --bg:#181818;--panel:#1F1F1F;--inset:#272727;--line:#313131;--deep:#131209;
+  --text:#F3EEE5;--muted:#B3AC9F;--accent:#E8B05A;--accent-ink:#181818;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+  --k:#6B665D;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:Manrope,"Segoe UI",system-ui,sans-serif;font-size:16px;line-height:24px;font-weight:400;font-style:normal;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,dl,dd,dt,ul{margin:0;padding:0}
+ul{list-style:none}
+button{font:inherit;color:inherit}
+a.btn{color:inherit;text-decoration:none}
+
+/* Именованные стили текста */
+.heading-5{font-size:24px;line-height:32px;font-weight:600;text-wrap:balance}
+.heading-6{font-size:20px;line-height:28px;font-weight:600;text-wrap:balance}
+.title-3{font-size:16px;line-height:24px;font-weight:500}
+.title-4{font-size:14px;line-height:20px;font-weight:500}
+.body-3{font-size:16px;line-height:24px;font-weight:400;text-wrap:pretty}
+.body-6{font-size:14px;line-height:20px;font-weight:400;text-wrap:pretty}
+.button-sm{font-size:14px;line-height:20px;font-weight:600}
+.caption-2{font-size:14px;line-height:20px;font-weight:400;text-wrap:pretty}
+.caption-3{font-size:12px;line-height:16px;font-weight:600}
+.caption-5{font-size:12px;line-height:16px;font-weight:400;text-wrap:pretty}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.skip{position:absolute;left:var(--s-100);top:var(--s-100);z-index:10;background:var(--accent);color:var(--accent-ink);padding:var(--s-75) var(--s-100);border-radius:8px;transform:translateY(-200%)}
+.skip:focus{transform:none}
+
+.app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:var(--s-100);height:100vh;height:100dvh;padding:var(--s-100);max-width:1680px;margin:0 auto}
+
+/* Верхняя плавающая панель */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-100) var(--s-200);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:var(--s-75) var(--s-100)}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand p{color:var(--muted)}
+.conn{display:flex;flex-direction:column;min-width:0;padding:var(--s-50) var(--s-100);background:var(--inset);border-radius:12px;border:1px solid var(--line)}
+.conn-row{display:flex;align-items:center;gap:var(--s-75)}
+.conn-sub{color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:var(--s-75);margin-left:auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-75);min-height:44px;padding:var(--s-75) var(--s-100);border-radius:8px;border:1px solid var(--line);background:var(--inset);cursor:pointer;text-align:center;white-space:normal;transition:background-color 300ms var(--ease),transform 300ms var(--ease),opacity 300ms var(--ease)}
+.btn:hover{background:#313131;transform:translateY(-1px)}
+.btn:active{transform:scale(0.98)}
+.btn[aria-pressed="true"]{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{background:#F0BD6F}
+.btn svg{width:20px;height:20px;flex:none}
+.notice{flex-basis:100%;color:var(--muted);padding:0 var(--s-50)}
+.notice[data-level="error"]{color:#F2A2A2}
+.notice[data-level="warn"]{color:#EBCB86}
+
+/* Сцена и боковая панель */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--s-100);min-height:0}
+.scene-card{display:grid;grid-template-rows:minmax(0,1fr) auto auto;gap:var(--s-100);min-height:0;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:var(--s-100)}
+.scene{position:relative;min-height:0;border-radius:4px;overflow:hidden;background:var(--deep)}
+.scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+.scene canvas.dragging{cursor:grabbing}
+.scene canvas.hot{cursor:pointer}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;display:flex;align-items:center;gap:var(--s-50);padding:var(--s-25) var(--s-75);border-radius:8px;background:rgba(24,24,24,0.9);border:1px solid var(--line);white-space:nowrap;will-change:transform}
+.tag[data-selected="true"]{border-color:var(--accent)}
+.scene-hint{position:absolute;left:var(--s-100);top:var(--s-100);padding:var(--s-50) var(--s-75);border-radius:8px;background:rgba(24,24,24,0.9);color:var(--muted);pointer-events:none}
+.cam{position:absolute;right:var(--s-100);bottom:var(--s-100);display:flex;gap:var(--s-75);align-items:center}
+.cam .btn{min-width:44px;padding:var(--s-75)}
+.cam-label{padding:var(--s-50) var(--s-75);border-radius:8px;background:rgba(24,24,24,0.9);color:var(--muted)}
+.scene-note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:var(--s-300);text-align:center;color:var(--muted);background:var(--deep)}
+.scene-note[hidden]{display:none}
+.scene-tools{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-75) var(--s-100)}
+.scene-tools .btn{flex:none}
+.tools-note{flex:1 1 220px;min-width:0;color:var(--muted)}
+.tools-state{flex-basis:100%;color:var(--muted)}
+.tools-state:empty{display:none}
+.bubble{position:absolute;left:0;top:0;padding:var(--s-25) var(--s-75);border-radius:12px;background:rgba(243,238,229,0.95);color:#181818;white-space:nowrap;will-change:transform;pointer-events:none}
+.skeleton{width:min(100%,360px);display:grid;gap:var(--s-100)}
+.skeleton i{display:block;height:var(--s-300);border-radius:8px;background:var(--inset);animation:pulse 1600ms var(--ease) infinite}
+.skeleton i:nth-child(2){width:80%}
+.skeleton i:nth-child(3){width:55%}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--s-75)}
+.seat{display:flex;flex-direction:column;gap:var(--s-25);align-items:flex-start;min-height:44px;padding:var(--s-75) var(--s-100);border-radius:8px;border:1px solid var(--line);background:var(--inset);text-align:left;cursor:pointer;min-width:0;transition:background-color 300ms var(--ease),transform 300ms var(--ease)}
+.seat:hover{background:#313131;transform:translateY(-1px)}
+.seat:active{transform:scale(0.98)}
+.seat[aria-pressed="true"]{border-color:var(--accent);background:#313131}
+.seat-name{display:block;max-width:100%;overflow-wrap:anywhere}
+.seat-state{display:flex;align-items:center;gap:var(--s-75);color:var(--muted);max-width:100%}
+.seat-state span:last-child{overflow-wrap:anywhere}
+
+.side{display:flex;flex-direction:column;gap:var(--s-200);min-height:0;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:var(--s-200)}
+.side .eyebrow{color:var(--muted)}
+.status-row{display:flex;align-items:center;gap:var(--s-100);padding:var(--s-100);background:var(--inset);border-radius:12px}
+.facts{display:grid;gap:var(--s-100)}
+.facts div{display:grid;gap:var(--s-25)}
+.facts dt{color:var(--muted)}
+.facts dd{overflow-wrap:anywhere}
+.honest{padding:var(--s-100);border-radius:12px;border:1px solid var(--line);color:var(--muted)}
+
+/* Маркеры статуса: цвет всегда дополнен формой и текстом */
+.dot{flex:none;width:12px;height:12px;background:var(--k);border-radius:9999px}
+.dot[data-shape="square"]{border-radius:2px}
+.dot[data-shape="diamond"]{border-radius:2px;transform:rotate(45deg) scale(0.85)}
+.dot[data-shape="ring"]{background:transparent;border:2px solid var(--k)}
+[data-kind="reading"]{--k:#6FB1E8}
+[data-kind="editing"]{--k:#F0B35A}
+[data-kind="running"],[data-kind="checking"]{--k:#B59AE8}
+[data-kind="working"]{--k:#7CC48A}
+[data-kind="waiting"],[data-kind="assigned"]{--k:#D9C16B}
+[data-kind="done"]{--k:#8DBF9B}
+[data-kind="error"]{--k:#E86F6F}
+[data-kind="stale"]{--k:#9A9487}
+[data-kind="unknown"],[data-kind="free"]{--k:#7C766B}
+[data-kind="live"]{--k:#7CC48A}
+[data-kind="static"]{--k:#6FB1E8}
+[data-kind="connecting"]{--k:#D9C16B}
+[data-kind="idle"]{--k:#7C766B}
+
+/* Журнал */
+.log{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-75) var(--s-200);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:var(--s-75) var(--s-100)}
+.log h2{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s-75)}
+.chip{display:inline-flex;align-items:center;gap:var(--s-75);padding:var(--s-25) var(--s-75);border-radius:8px;background:var(--inset);border:1px solid var(--line)}
+.recent{display:flex;flex-wrap:wrap;gap:var(--s-25) var(--s-200);color:var(--muted);min-width:0}
+.recent li{overflow-wrap:anywhere}
+.empty{color:var(--muted)}
+
+@media (max-width:980px){
+  .app{height:auto;min-height:100dvh}
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .scene-card{grid-template-rows:auto auto auto}
+  .scene{height:58vh;min-height:320px}
+  .actions{margin-left:0;width:100%}
+  .actions .btn{flex:1 1 150px}
+  .side{overflow:visible}
+}
+@media (max-width:600px){
+  .scene{height:94vw;max-height:420px;min-height:300px}
+  .tag{display:none}
+  .scene-hint{display:none}
+  .conn{width:100%}
+  .roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .btn:hover,.seat:hover{transform:none}
+}
+</style>
+</head>
+<body>
+<a class="skip button-sm" href="#selected">Перейти к выбранному сотруднику</a>
+<noscript><p class="body-3" style="padding:16px">Для страницы нужен JavaScript.</p></noscript>
+<div class="app">
+  <header class="top" aria-label="Agent Office">
+    <div class="brand">
+      <h1 class="heading-6">Agent Office</h1>
+      <p class="caption-5">Команда агентов в одной комнате</p>
+    </div>
+    <div class="conn" aria-label="Связь с данными">
+      <div class="conn-row"><span class="dot" id="connDot" data-shape="ring" aria-hidden="true"></span><span class="title-4" id="connLabel">Нет подключения</span></div>
+      <span class="caption-5 conn-sub" id="connSub">Данные не подключены</span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn button-sm" id="btnDemo">Посмотреть демо</button>
+      <a href="guide.html" class="btn button-sm" style="text-decoration:none">Как подключить</a>
+      <button type="button" class="btn primary button-sm" id="btnLive">Подключить живые данные</button>
+      <button type="button" class="btn button-sm" id="btnSnap">Открыть снимок</button>
+      <button type="button" class="btn button-sm" id="btnPause" aria-pressed="false">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" id="pauseIcon"><path d="M200 32h-40a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h40a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16Zm-104 0H56a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h40a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16Z"/></svg>
+        <span id="pauseText">Пауза анимации</span>
+      </button>
+    </div>
+    <p class="notice caption-2" id="notice" role="status" aria-live="polite" data-level="info"></p>
+    <input type="file" id="snapInput" accept=".json,application/json" hidden>
+  </header>
+
+  <main class="stage">
+    <section class="scene-card" aria-label="Комната и сотрудники">
+      <div class="scene" id="scene">
+        <canvas id="c" tabindex="0" aria-label="Трёхмерная комната офиса. Стрелки влево и вправо поворачивают камеру. Сотрудников можно выбрать кнопками под сценой."></canvas>
+        <div class="labels" id="labels" aria-hidden="true"></div>
+        <div class="labels" id="bubbles" aria-hidden="true"></div>
+        <p class="scene-hint caption-5">Перетащите комнату, чтобы повернуть</p>
+        <div class="cam" role="group" aria-label="Угол камеры">
+          <button type="button" class="btn" id="camLeft" aria-label="Повернуть камеру влево" title="Повернуть камеру влево">
+            <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M165.66 202.34a8 8 0 0 1-11.32 11.32l-80-80a8 8 0 0 1 0-11.32l80-80a8 8 0 0 1 11.32 11.32L91.31 128Z"/></svg>
+          </button>
+          <span class="cam-label caption-3">Камера</span>
+          <button type="button" class="btn" id="camRight" aria-label="Повернуть камеру вправо" title="Повернуть камеру вправо">
+            <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="m181.66 133.66-80 80a8 8 0 0 1-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0 1 11.32-11.32l80 80a8 8 0 0 1 0 11.32Z"/></svg>
+          </button>
+        </div>
+        <div class="scene-note" id="sceneNote" role="status">
+          <div class="skeleton" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="scene-tools">
+        <button type="button" class="btn button-sm" id="btnCoffee">Собрать на кофе</button>
+        <p class="caption-5 tools-note" id="toolsNote">Движения для настроения, статусы - из журналов</p>
+        <p class="caption-5 tools-state" id="coffeeState" role="status" aria-live="polite"></p>
+      </div>
+      <div class="roster" id="roster" role="group" aria-label="Места в офисе"></div>
+    </section>
+
+    <aside class="side" id="selected" tabindex="-1" aria-label="Выбранный сотрудник">
+      <p class="eyebrow caption-3">Выбранный сотрудник</p>
+      <div>
+        <h2 class="heading-5" id="selName">Codex</h2>
+        <p class="body-6" id="selRole" style="color:var(--muted)"></p>
+      </div>
+      <div class="status-row" id="selStatusRow" data-kind="unknown">
+        <span class="dot" id="selDot" aria-hidden="true"></span>
+        <span class="title-3" id="selStatus">Нет данных</span>
+      </div>
+      <dl class="facts body-6">
+        <div><dt class="caption-3">Поручение</dt><dd id="selTask"></dd></div>
+        <div><dt class="caption-3">Последнее событие</dt><dd id="selWhen"></dd></div>
+        <div><dt class="caption-3">Источник</dt><dd id="selSource"></dd></div>
+        <div><dt class="caption-3">Свежесть данных</dt><dd id="selFresh"></dd></div>
+      </dl>
+      <p class="honest caption-2">Движение человечка показывает только тип последнего события. Это не содержимое экрана и не мысли агента. Точный прогресс не передаётся. Прогулки к кофемашине и разговоры людей - декор сцены, это не реальная переписка агентов.</p>
+    </aside>
+  </main>
+
+  <section class="log" aria-label="Мини журнал событий">
+    <h2 class="title-4">Журнал событий</h2>
+    <div class="chips" id="chips"></div>
+    <ul class="recent caption-5" id="recent"></ul>
+    <p class="empty caption-2" id="logEmpty">Событий пока нет. Подключите файл состояния, и здесь появятся типы событий.</p>
+  </section>
+</div>
+
+<script src="vendor/three.min.js" onerror="window.__threeFailed=true"></script>
+<script>
+(function(){
+'use strict';
+
+/* ===================== Константы и справочники ===================== */
+var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var POLL_MS = 2000, STALE_SNAPSHOT_MS = 15000, STALE_EVENT_MS = 90000, MAX_FILE = 1048576, MAX_SEATS = 6, MAX_FUTURE_MS = 30000;
+
+var STATUS = {
+  reading:{label:'Читает', active:true, motion:'read'},
+  editing:{label:'Правит файл', active:true, motion:'edit'},
+  running:{label:'Выполняет команду', active:true, motion:'run'},
+  checking:{label:'Проверяет', active:true, motion:'run'},
+  working:{label:'Свежая активность', active:true, motion:'work'},
+  waiting:{label:'Ожидает', active:false},
+  assigned:{label:'Назначено поручение', active:false},
+  done:{label:'Завершено', active:false},
+  error:{label:'Ошибка', active:false},
+  stale:{label:'Нет свежих событий', active:false},
+  unknown:{label:'Нет данных', active:false}
+};
+var ACTION_KIND = {};
+Object.keys(STATUS).forEach(function(k){ ACTION_KIND[STATUS[k].label] = k; });
+var SHAPES = {reading:'circle',editing:'circle',running:'circle',checking:'circle',working:'circle',waiting:'ring',assigned:'ring',done:'square',error:'diamond',stale:'ring',unknown:'ring',free:'ring'};
+var STATUS_HEX = {reading:'#6FB1E8',editing:'#F0B35A',running:'#B59AE8',checking:'#B59AE8',working:'#7CC48A',waiting:'#D9C16B',assigned:'#D9C16B',done:'#8DBF9B',error:'#E86F6F',stale:'#8A8478',unknown:'#5E5A52',free:'#3A3732'};
+var MOTION = {edit:{amp:1,freq:11},run:{amp:0.8,freq:8},work:{amp:0.65,freq:5.5},read:{amp:0.45,freq:3.2}};
+
+var KNOWN = [];
+var SOURCE_LABELS = {codex_log:'Журнал Codex', claude_log:'Журнал Claude', cli_state:'Состояние прямого CLI', codex_team:'Журнал Codex: помощники', custom_state:'JSON вашего агента', demo:'Демонстрация'};
+
+var LOOKS = [
+  {skin:'#F0C8A0', hair:'#3B2A25', hairStyle:'bun', shirt:'#6F8F72', pants:'#3F4756', glasses:true, chair:'#5E6B7A'},
+  {skin:'#C98B5E', hair:'#B5562B', hairStyle:'short', shirt:'#C86B4A', pants:'#2F3A48', beard:true, chair:'#7A5A4A'},
+  {skin:'#8D5A3C', hair:'#1E1B1A', hairStyle:'curly', shirt:'#3E5C8A', pants:'#8C7A5B', headphones:true, chair:'#4E6A5E'},
+  {skin:'#E3B58B', hair:'#7A4B2A', hairStyle:'short', shirt:'#C9A24A', pants:'#3C3A40', chair:'#6A5E7A'},
+  {skin:'#B87A52', hair:'#D9D2C6', hairStyle:'bun', shirt:'#8A6FA8', pants:'#4A4338', glasses:true, chair:'#5E7A7A'},
+  {skin:'#F2D2B3', hair:'#2B2B33', hairStyle:'bun', shirt:'#D58F8F', pants:'#3A4452', chair:'#7A6A52'}
+];
+
+/* ===================== Утилиты ===================== */
+function $(s){ return document.querySelector(s); }
+function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+function has(o,k){ return Object.prototype.hasOwnProperty.call(o,k); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function clean(v,max){
+  if(typeof v !== 'string') return '';
+  return v.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g,'').replace(/\s+/g,' ').trim().slice(0,max);
+}
+function parseTime(v){
+  if(typeof v !== 'string' || v.length > 40) return null;
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.,]\d{1,9})?)?(Z|[+-]\d{2}(:?\d{2})?)?$/.test(v)) return null;
+  var s = v.replace(',', '.');
+  if(!/(Z|[+-]\d{2}(:?\d{2})?)$/.test(s.slice(10))) s += 'Z';
+  s = s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  var ms = Date.parse(s);
+  return isFinite(ms) ? ms : null;
+}
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function hhmmss(ms){ var d = new Date(ms); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+function rel(ms){
+  var s = Math.max(0, Math.round(ms / 1000));
+  if(s < 5) return 'только что';
+  if(s < 60) return s + ' с назад';
+  if(s < 3600) return Math.floor(s/60) + ' мин назад';
+  return Math.floor(s/3600) + ' ч назад';
+}
+
+/* ===================== Нормализация снимка ===================== */
+function normalizeSnapshot(data){
+  if(!data || typeof data !== 'object' || Array.isArray(data)) return {ok:false, error:'ожидался объект JSON'};
+  if(data.schema_version !== 1) return {ok:false, error:'неизвестная версия схемы'};
+  var gen = parseTime(data.generated_at);
+  if(gen == null) return {ok:false, error:'нет корректного времени снимка'};
+  var out = {generatedMs:gen, agents:[], events:[], hidden:0, readOnly:false};
+  var seen = Object.create(null);
+  var rawAgents = Array.isArray(data.agents) ? data.agents : [];
+  rawAgents.forEach(function(a){
+    if(!a || typeof a !== 'object') return;
+    var id = typeof a.id === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(a.id) ? a.id : null;
+    if(!id || has(seen,id)) return;
+    seen[id] = true;
+    if(out.agents.length >= MAX_SEATS){ out.hidden++; return; }
+    var known = null;
+    KNOWN.forEach(function(k){ if(k.id === id) known = k; });
+    var status = (typeof a.status === 'string' && has(STATUS,a.status)) ? a.status : 'unknown';
+    var ev = parseTime(a.event_at);
+    if(ev != null && ev - gen > MAX_FUTURE_MS) ev = null;
+    var src = clean(a.source, 24);
+    out.agents.push({
+      id:id,
+      name: known ? known.name : (clean(a.name, 24) || 'Агент'),
+      role: known ? known.role : (clean(a.role, 40) || 'Подключённый агент'),
+      task: known ? clean(a.task, 48) || known.task : (clean(a.task, 48) || 'Задача не указана'),
+      status: status,
+      eventMs: ev,
+      source: src
+    });
+  });
+  var rawEvents = Array.isArray(data.events) ? data.events.slice(-60) : [];
+  rawEvents.forEach(function(e){
+    if(!e || typeof e !== 'object') return;
+    var id = typeof e.agent_id === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(e.agent_id) ? e.agent_id : null;
+    var at = parseTime(e.at);
+    if(!id || at == null) return;
+    if(at - gen > MAX_FUTURE_MS) return;
+    var kind = (typeof e.action === 'string' && has(ACTION_KIND, e.action)) ? ACTION_KIND[e.action] : 'working';
+    out.events.push({agentId:id, atMs:at, kind:kind});
+  });
+  out.events.sort(function(a,b){ return a.atMs - b.atMs; });
+  out.events = out.events.slice(-30);
+  out.readOnly = !!(data.observer && typeof data.observer === 'object' && data.observer.mode === 'read_only');
+  return {ok:true, snapshot:out};
+}
+
+/* ===================== Состояние приложения ===================== */
+var S = {
+  snap:null,
+  seats:[],
+  seatSig:'',
+  selected:0,
+  paused:REDUCED,
+  loop:null,
+  demo:false,
+  demoTimer:null,
+  connecting:false,
+  lastError:null,
+  views:[],
+  notice:{text:'Начните с демо или откройте «Как подключить», чтобы увидеть работу своих агентов.', level:'info'}
+};
+
+/* Вся анимация (рабочая и декоративная) стоит: пауза, reduced-motion или статический снимок */
+function motionOff(){
+  return !!(S.paused || REDUCED || (S.snap && S.snap.static));
+}
+
+function setNotice(text, level){
+  S.notice = {text:text, level:level || 'info'};
+  var n = $('#notice');
+  n.textContent = text;
+  n.setAttribute('data-level', S.notice.level);
+}
+
+function agentInfo(id){
+  var known = null;
+  KNOWN.forEach(function(k){ if(k.id === id) known = k; });
+  var rec = null;
+  if(S.snap) S.snap.agents.forEach(function(a){ if(a.id === id) rec = a; });
+  if(rec) return rec;
+  return {id:id, name:known ? known.name : 'Агент', role:known ? known.role : '', task:known ? known.task : '', status:'unknown', eventMs:null, source:''};
+}
+
+function computeSeats(){
+  var ids = [];
+  if(S.snap) S.snap.agents.forEach(function(a){ if(ids.indexOf(a.id) < 0) ids.push(a.id); });
+  ids = ids.slice(0, MAX_SEATS);
+  var total = Math.min(MAX_SEATS, Math.max(4, ids.length + 1));
+  var seats = ids.map(function(id){ return {type:'agent', id:id}; });
+  while(seats.length < total) seats.push({type:'free'});
+  return seats;
+}
+
+/* Честное представление статуса агента на текущий момент */
+function viewFor(seat, now){
+  if(seat.type === 'free') return {kind:'free', label:'Свободное место', typing:false, motion:null, detail:'К месту не подключён ни один агент.', fresh:'Не применимо'};
+  var a = agentInfo(seat.id);
+  if(!S.snap) return {kind:'unknown', label:'Нет данных', typing:false, motion:null, detail:'', fresh:'Данные не подключены'};
+  var snap = S.snap;
+  if(a.status === 'unknown' || a.eventMs == null) return {kind:'unknown', label:'Нет данных', typing:false, motion:null, fresh:'В снимке нет события этого агента'};
+  var info = STATUS[a.status];
+  var refNow = snap.static ? snap.generatedMs : now;
+  var eventAge = Math.max(0, refNow - a.eventMs);
+  var kind = a.status, label = info.label;
+  if((info.active || a.status === 'assigned') && eventAge > STALE_EVENT_MS){ kind = 'stale'; label = STATUS.stale.label; }
+  else if(a.status === 'stale'){ kind = 'stale'; label = STATUS.stale.label; }
+  if(snap.static){
+    return {kind:kind, label:label, typing:false, motion:null, fresh:'Статический снимок, движение отключено'};
+  }
+  if(S.loop && S.lastError){
+    return {kind:'stale', label:'Ошибка чтения', typing:false, motion:null, fresh:'Ошибка чтения файла. Показаны прежние данные, последний известный статус: ' + label};
+  }
+  var snapAge = now - snap.generatedMs;
+  if(snapAge > STALE_SNAPSHOT_MS){
+    return {kind:'stale', label:'Снимок устарел', typing:false, motion:null, fresh:'Снимок устарел: ' + rel(snapAge) + '. Последний известный статус: ' + label};
+  }
+  var typing = !!(info.active && kind === a.status);
+  return {kind:kind, label:label, typing:typing, motion: typing ? info.motion : null, fresh: typing ? 'Свежий снимок, событие моложе 90 секунд' : 'Свежий снимок'};
+}
+
+function connView(now){
+  if(S.demo) return {kind:'demo', label:'ДЕМОНСТРАЦИЯ', sub:'Сценарий вымышленный, агенты не подключены'};
+  if(!S.snap){
+    if(S.connecting) return {kind:'connecting', label:'Подключение', sub:'Ожидаем выбор файла'};
+    if(S.loop && S.lastError) return {kind:'stale', label:'Ошибка чтения', sub:'Данных пока нет'};
+    return {kind:'idle', label:'Нет подключения', sub:'Данные не подключены'};
+  }
+  if(S.snap.static) return {kind:'static', label:'Статический снимок', sub:'Снимок от ' + hhmmss(S.snap.generatedMs)};
+  var age = now - S.snap.generatedMs;
+  if(S.loop && S.lastError) return {kind:'stale', label:'Ошибка чтения', sub:'Старые данные от ' + rel(age)};
+  if(age > STALE_SNAPSHOT_MS) return {kind:'stale', label:'Снимок устарел', sub:'Данные от ' + rel(age)};
+  return {kind:'live', label:'Живые данные', sub:'Снимок от ' + rel(age)};
+}
+
+/* ===================== DOM: рендер ===================== */
+var rosterNodes = [];
+function ensureRoster(){
+  var sig = S.seats.map(function(s){ return s.type === 'agent' ? 'a:' + s.id : 'f'; }).join('|');
+  if(sig === S.seatSig) return false;
+  S.seatSig = sig;
+  var box = $('#roster');
+  while(box.firstChild) box.removeChild(box.firstChild);
+  rosterNodes = [];
+  S.seats.forEach(function(seat, i){
+    var b = el('button', 'seat');
+    b.type = 'button';
+    b.setAttribute('data-index', String(i));
+    var name = el('span', 'seat-name title-4');
+    var st = el('span', 'seat-state caption-5');
+    var dot = el('span', 'dot'); dot.setAttribute('aria-hidden', 'true');
+    var txt = el('span');
+    st.appendChild(dot); st.appendChild(txt);
+    b.appendChild(name); b.appendChild(st);
+    b.addEventListener('click', function(){ select(i); });
+    box.appendChild(b);
+    rosterNodes.push({btn:b, name:name, state:st, dot:dot, txt:txt});
+  });
+  if(S.selected >= S.seats.length) S.selected = 0;
+  return true;
+}
+
+function seatName(seat){ return seat.type === 'free' ? 'Свободное место' : agentInfo(seat.id).name; }
+
+function renderRoster(){
+  S.seats.forEach(function(seat, i){
+    var n = rosterNodes[i], v = S.views[i];
+    n.name.textContent = seatName(seat) + (seat.type === 'free' ? ' ' + (i + 1) : '');
+    n.txt.textContent = v.label;
+    n.dot.setAttribute('data-shape', SHAPES[v.kind] === 'circle' ? 'circle' : SHAPES[v.kind] || 'ring');
+    n.state.setAttribute('data-kind', v.kind);
+    n.btn.setAttribute('aria-pressed', i === S.selected ? 'true' : 'false');
+  });
+}
+
+function sourceLabel(a){
+  if(a && has(SOURCE_LABELS, a.source)) return SOURCE_LABELS[a.source];
+  return a && a.source ? 'Подключённый источник' : 'Источник не указан';
+}
+
+function renderSelected(now){
+  var seat = S.seats[S.selected] || S.seats[0];
+  var v = S.views[S.selected] || S.views[0];
+  var row = $('#selStatusRow');
+  row.setAttribute('data-kind', v.kind);
+  var dot = $('#selDot');
+  dot.setAttribute('data-shape', SHAPES[v.kind] || 'ring');
+  $('#selStatus').textContent = v.label;
+  if(seat.type === 'free'){
+    $('#selName').textContent = 'Свободное место';
+    $('#selRole').textContent = 'Место ' + (S.selected + 1) + ' из ' + S.seats.length;
+    $('#selTask').textContent = 'Нет поручения';
+    $('#selWhen').textContent = 'Нет событий';
+    $('#selSource').textContent = 'Нет источника';
+    $('#selFresh').textContent = v.detail || 'Не применимо';
+    return;
+  }
+  var a = agentInfo(seat.id);
+  $('#selName').textContent = a.name;
+  $('#selRole').textContent = a.role;
+  $('#selTask').textContent = a.task || 'Не указано';
+  $('#selWhen').textContent = a.eventMs != null
+    ? ((S.snap && S.snap.static ? 'В момент снимка: ' : '') + rel((S.snap && S.snap.static ? S.snap.generatedMs : now) - a.eventMs) + ' (' + hhmmss(a.eventMs) + ')')
+    : 'Нет данных';
+  $('#selSource').textContent = S.snap ? sourceLabel(a) : 'Не подключён';
+  $('#selFresh').textContent = v.fresh || '';
+}
+
+function renderConn(now){
+  var c = connView(now);
+  $('#connLabel').textContent = c.label;
+  $('#connSub').textContent = c.sub;
+  var dot = $('#connDot');
+  $('.conn').setAttribute('data-kind', c.kind);
+  dot.setAttribute('data-shape', c.kind === 'live' || c.kind === 'connecting' ? 'circle' : (c.kind === 'static' ? 'square' : 'ring'));
+  var live = $('#btnLive');
+  live.textContent = (S.loop && !S.loop.stopped) ? 'Выбрать другой файл' : 'Подключить живые данные';
+}
+
+function renderLog(now){
+  var chips = $('#chips'), recent = $('#recent'), empty = $('#logEmpty');
+  while(chips.firstChild) chips.removeChild(chips.firstChild);
+  while(recent.firstChild) recent.removeChild(recent.firstChild);
+  var evs = S.snap ? S.snap.events : [];
+  if(!evs.length){ empty.hidden = false; return; }
+  empty.hidden = true;
+  var counts = {};
+  evs.forEach(function(e){ counts[e.kind] = (counts[e.kind] || 0) + 1; });
+  Object.keys(counts).forEach(function(k){
+    var c = el('span', 'chip caption-3'); c.setAttribute('data-kind', k);
+    var d = el('span', 'dot'); d.setAttribute('data-shape', SHAPES[k] || 'ring'); d.setAttribute('aria-hidden', 'true');
+    c.appendChild(d); c.appendChild(el('span', null, (STATUS[k] ? STATUS[k].label : k) + ': ' + counts[k]));
+    chips.appendChild(c);
+  });
+  evs.slice(-4).reverse().forEach(function(e){
+    var name = agentInfo(e.agentId).name;
+    recent.appendChild(el('li', null, hhmmss(e.atMs) + ' ' + name + ': ' + (STATUS[e.kind] ? STATUS[e.kind].label : '')));
+  });
+}
+
+function updateTags(){
+  S.seats.forEach(function(seat, i){
+    var t = tagNodes[i]; if(!t) return;
+    t.root.setAttribute('data-selected', i === S.selected ? 'true' : 'false');
+    t.name.textContent = seatName(seat);
+    t.state.textContent = S.views[i].label;
+    t.dot.setAttribute('data-shape', SHAPES[S.views[i].kind] || 'ring');
+    t.root.setAttribute('data-kind', S.views[i].kind);
+  });
+  if(scene3d.syncTags) scene3d.syncTags();
+}
+
+function refresh(){
+  var now = Date.now();
+  var changed = ensureRoster();
+  S.views = S.seats.map(function(seat){ return viewFor(seat, now); });
+  renderConn(now);
+  renderRoster();
+  renderSelected(now);
+  renderLog(now);
+  if(scene3d.ok){
+    if(changed || scene3d.sig !== S.seatSig) scene3d.setSeats(S.seats);
+    ensureTags();
+    updateTags();
+    scene3d.applyViews(S.views, S.selected);
+  }
+}
+
+function select(i){
+  if(i < 0 || i >= S.seats.length) return;
+  S.selected = i;
+  refresh();
+}
+
+/* ===================== Применение данных ===================== */
+function applyData(data, opts){
+  var res = normalizeSnapshot(data);
+  if(!res.ok) return {ok:false, error:res.error};
+  var isStatic = !!(opts && opts.static);
+  var now = Date.now();
+  if(!isStatic && res.snapshot.generatedMs - now > MAX_FUTURE_MS) return {ok:false, error:'время снимка находится в будущем'};
+  res.snapshot.static = isStatic;
+  S.snap = res.snapshot;
+  S.seats = computeSeats();
+  if(res.snapshot.hidden > 0) setNotice('Показаны первые ' + MAX_SEATS + ' агентов, ещё ' + res.snapshot.hidden + ' скрыто.', 'warn');
+  refresh();
+  return {ok:true};
+}
+
+/* ===================== Чтение файлов ===================== */
+function ReadError(code, text){ this.code = code; this.text = text || ''; }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+async function readOnce(loop){
+  var file = await loop.handle.getFile();
+  if(file.size > MAX_FILE) throw new ReadError('big');
+  var text = await file.text();
+  if(text.length > MAX_FILE) throw new ReadError('big');
+  var data;
+  try{ data = JSON.parse(text); }catch(e){ throw new ReadError('json'); }
+  if(loop.stopped || S.loop !== loop) return;
+  var prevError = S.lastError;
+  S.lastError = null; /* восстановление: applyData сразу перерисует живой статус */
+  var res = applyData(data, {static:false});
+  if(!res.ok){ S.lastError = prevError; throw new ReadError('schema', res.error); }
+}
+
+function describeError(e){
+  if(e instanceof ReadError){
+    if(e.code === 'big') return 'Файл больше 1 МБ, он не прочитан. Проверьте, что выбран файл состояния офиса.';
+    if(e.code === 'json') return 'Файл содержит неверный JSON. Обычно это временно, повторим через 2 секунды.';
+    if(e.code === 'schema') return 'Снимок имеет неверный формат: ' + e.text + '.';
+  }
+  var n = e && e.name;
+  if(n === 'NotFoundError') return 'Файл состояния не найден. Возможно, его переместили. Подключите данные заново.';
+  if(n === 'NotAllowedError' || n === 'SecurityError') return 'Нет разрешения на чтение файла. Подключите живые данные заново.';
+  if(n === 'NotReadableError') return 'Файл сейчас занят. Повторим через 2 секунды.';
+  return 'Не удалось прочитать файл состояния. Повторим через 2 секунды.';
+}
+
+async function runLoop(loop){
+  while(!loop.stopped && S.loop === loop){
+    try{
+      await readOnce(loop);
+      if(loop.stopped || S.loop !== loop) return;
+      S.lastError = null;
+      if(S.notice.level !== 'info' || S.notice.text.indexOf('Читаем') !== 0) setNotice('Читаем файл состояния каждые 2 секунды, только чтение.', 'info');
+    }catch(e){
+      if(loop.stopped || S.loop !== loop) return;
+      S.lastError = e;
+      setNotice(describeError(e), 'error');
+      refresh();
+    }
+    await sleep(POLL_MS);
+  }
+}
+
+function stopLoop(){
+  if(S.demoTimer){ clearInterval(S.demoTimer); S.demoTimer = null; }
+  S.demo = false;
+  $('#btnDemo').textContent = 'Посмотреть демо';
+  if(S.loop){ S.loop.stopped = true; S.loop = null; }
+}
+
+async function connectLive(){
+  if(typeof window.showOpenFilePicker !== 'function'){
+    setNotice('Этот браузер не умеет выбирать файл для живых данных. Кнопка «Открыть снимок» покажет статический снимок.', 'error');
+    return;
+  }
+  S.connecting = true; refresh();
+  var handles;
+  try{
+    handles = await window.showOpenFilePicker({multiple:false, types:[{description:'JSON состояния офиса', accept:{'application/json':['.json']}}]});
+  }catch(e){
+    S.connecting = false;
+    if(e && e.name === 'AbortError') setNotice((S.loop && !S.loop.stopped) ? 'Выбор файла отменён. Прежний файл продолжает читаться.' : 'Выбор файла отменён. Живые данные не подключены.', 'warn');
+    else if(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) setNotice('Нет разрешения на выбор файла. Нажмите кнопку ещё раз.', 'error');
+    else setNotice('Не удалось открыть выбор файла.', 'error');
+    refresh();
+    return;
+  }
+  var handle = handles && handles[0];
+  if(!handle || handle.kind !== 'file'){
+    S.connecting = false; setNotice('Выбран не файл. Живые данные не подключены.', 'error'); refresh(); return;
+  }
+  try{
+    if(typeof handle.queryPermission === 'function'){
+      var p = await handle.queryPermission({mode:'read'});
+      if(p !== 'granted') p = await handle.requestPermission({mode:'read'});
+      if(p !== 'granted'){ S.connecting = false; setNotice('Нет разрешения на чтение файла. Живые данные не подключены.', 'error'); refresh(); return; }
+    }
+  }catch(e){
+    S.connecting = false; setNotice('Нет разрешения на чтение файла. Живые данные не подключены.', 'error'); refresh(); return;
+  }
+  stopLoop();
+  S.connecting = false;
+  S.lastError = null;
+  S.snap = null; S.seats = computeSeats();
+  var loop = {handle:handle, stopped:false};
+  S.loop = loop;
+  setNotice('Файл выбран. Читаем его каждые 2 секунды, только чтение.', 'info');
+  refresh();
+  runLoop(loop);
+}
+
+async function openSnapshotFile(file){
+  if(!file) return;
+  if(file.size > MAX_FILE){ setNotice('Файл больше 1 МБ, снимок не открыт.', 'error'); return; }
+  try{
+    var text = await file.text();
+    var data = JSON.parse(text);
+    var res = applyData(data, {static:true});
+    if(!res.ok){ setNotice('Снимок имеет неверный формат: ' + res.error + '.', 'error'); return; }
+    stopLoop();
+    S.lastError = null;
+    setNotice('Открыт статический снимок. Это не живые данные, движение отключено.', 'warn');
+    refresh();
+  }catch(e){
+    setNotice('Файл содержит неверный JSON. Снимок не открыт.', 'error');
+  }
+}
+
+/* ===================== 3D сцена ===================== */
+var scene3d = {ok:false, sig:'', setSeats:function(){}, applyViews:function(){}, requestRender:function(){}, setPaused:function(){}, rotate:function(){}, snapAz:function(){}, gather:function(){ return -1; }, actorStates:function(){ return []; }};
+var tagNodes = [];
+
+function ensureTags(){
+  var box = $('#labels');
+  if(tagNodes.length === S.seats.length && tagNodes.sig === S.seatSig) return;
+  while(box.firstChild) box.removeChild(box.firstChild);
+  tagNodes = [];
+  tagNodes.sig = S.seatSig;
+  S.seats.forEach(function(){
+    var root = el('div', 'tag caption-3');
+    var dot = el('span', 'dot'); dot.setAttribute('aria-hidden', 'true');
+    var name = el('span'); var state = el('span'); state.style.color = 'var(--muted)'; state.style.fontWeight = '400';
+    root.appendChild(dot); root.appendChild(name); root.appendChild(state);
+    box.appendChild(root);
+    tagNodes.push({root:root, dot:dot, name:name, state:state});
+  });
+  scene3d.syncTags && scene3d.syncTags();
+}
+
+function showSceneNote(text){
+  var n = $('#sceneNote');
+  while(n.firstChild) n.removeChild(n.firstChild);
+  var p = el('p', 'body-3', text);
+  n.appendChild(p);
+  n.hidden = false;
+}
+
+function init3D(){
+  var THREE = window.THREE;
+  if(!THREE || window.__threeFailed) throw new Error('Библиотека THREE недоступна');
+  var rev = parseInt(THREE.REVISION, 10) || 0;
+  var K = rev >= 155 ? Math.PI : 1;
+  var canvas = $('#c');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
+  renderer.setClearColor('#131209', 1);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color('#131209');
+  var camera = new THREE.OrthographicCamera(-8, 8, 5, -5, -60, 90);
+
+  /* ---- вспомогательные функции ---- */
+  var matCache = {};
+  function M(color, o){
+    var key = color + (o ? JSON.stringify(o) : '');
+    if(matCache[key]) return matCache[key];
+    var p = {color:color, roughness:0.82, metalness:0};
+    if(o) for(var k in o) p[k] = o[k];
+    var m = new THREE.MeshStandardMaterial(p);
+    matCache[key] = m;
+    return m;
+  }
+  function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function put(mesh, x, y, z, parent, cast, recv){
+    mesh.position.set(x, y, z);
+    mesh.castShadow = cast !== false;
+    mesh.receiveShadow = recv !== false;
+    parent.add(mesh);
+    return mesh;
+  }
+  function box(w,h,d,mat,x,y,z,parent,cast){ return put(new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat), x,y,z, parent, cast); }
+  function cyl(rt,rb,h,mat,x,y,z,parent,seg,cast){ return put(new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20), mat), x,y,z, parent, cast); }
+  function sph(r,mat,x,y,z,parent,sx,sy,sz,cast){
+    var m = put(new THREE.Mesh(new THREE.SphereGeometry(r, 22, 16), mat), x,y,z, parent, cast);
+    m.scale.set(sx||1, sy||1, sz||1);
+    return m;
+  }
+  function texFix(t){
+    if(rev >= 152 && THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+    try{ t.anisotropy = renderer.capabilities.getMaxAnisotropy(); }catch(e){}
+  }
+
+  /* ---- освещение ---- */
+  scene.add(new THREE.HemisphereLight(0xfff0da, 0x6a4c36, 0.78 * K));
+  var key = new THREE.DirectionalLight(0xfff0d6, 0.95 * K);
+  key.position.set(6, 11, 7);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -9; key.shadow.camera.right = 9; key.shadow.camera.top = 9; key.shadow.camera.bottom = -9;
+  key.shadow.camera.near = 1; key.shadow.camera.far = 32;
+  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.03; key.shadow.radius = 4;
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0xb9d6f2, 0.28 * K);
+  fill.position.set(-6, 5, 4);
+  scene.add(fill);
+  var winLight = new THREE.PointLight(0xfff1cf, 0.45 * K * (rev >= 155 ? 6 : 1), 12, 2);
+  winLight.position.set(1.6, 2.4, -3.4);
+  scene.add(winLight);
+
+  /* ---- комната ---- */
+  var room = new THREE.Group();
+  scene.add(room);
+  var RX = 5.2, RZ = 4.2, WH = 3.4;
+
+  function floorTexture(){
+    var c = document.createElement('canvas'); c.width = 1024; c.height = 1024;
+    var x = c.getContext('2d');
+    var r = rng(7);
+    var ph = 64;
+    for(var row = 0; row < 16; row++){
+      var xp = -r() * 300;
+      while(xp < 1024){
+        var len = 240 + r() * 260;
+        var k = 0.92 + r() * 0.16;
+        x.fillStyle = 'rgb(' + Math.round(176*k) + ',' + Math.round(124*k) + ',' + Math.round(76*k) + ')';
+        x.fillRect(xp, row*ph, len, ph);
+        x.strokeStyle = 'rgba(90,55,28,0.2)'; x.lineWidth = 1.2;
+        for(var g = 0; g < 5; g++){
+          var yy = row*ph + 6 + r() * (ph - 12);
+          x.beginPath(); x.moveTo(xp + 4, yy);
+          x.bezierCurveTo(xp + len*0.3, yy + (r()-0.5)*6, xp + len*0.6, yy + (r()-0.5)*6, xp + len - 4, yy + (r()-0.5)*4);
+          x.stroke();
+        }
+        x.fillStyle = 'rgba(60,36,18,0.55)';
+        x.fillRect(xp, row*ph, 2, ph);
+        xp += len;
+      }
+      x.fillStyle = 'rgba(60,36,18,0.55)';
+      x.fillRect(0, row*ph, 1024, 2);
+    }
+    var t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1.5, 1.9);
+    texFix(t);
+    return t;
+  }
+
+  (function buildShell(){
+    box(2*RX + 0.9, 0.36, 2*RZ + 0.9, M('#3E2B20'), 0, -0.24, 0, room, false);
+    var floorTop = new THREE.MeshStandardMaterial({map:floorTexture(), roughness:0.72, metalness:0});
+    var edge = M('#6B4A32');
+    var slab = new THREE.Mesh(new THREE.BoxGeometry(2*RX, 0.06, 2*RZ), [edge, edge, floorTop, edge, edge, edge]);
+    put(slab, 0, -0.03, 0, room, false, true);
+
+    var wallBack = M('#D8C2A0'), wallLeft = M('#9FB095'), panel = M('#7A5236'), rail = M('#B88A5E'), base = M('#5B3F2A');
+    box(2*RX + 0.4, WH, 0.2, wallBack, -0.0, WH/2, -RZ - 0.1, room);
+    box(0.2, WH, 2*RZ + 0.4, wallLeft, -RX - 0.1, WH/2, 0.0, room);
+    box(2*RX + 0.4, 0.08, 0.28, M('#EADFC8'), 0, WH + 0.04, -RZ - 0.1, room, false);
+    box(0.28, 0.08, 2*RZ + 0.4, M('#EADFC8'), -RX - 0.1, WH + 0.04, 0, room, false);
+    // панели
+    box(2*RX, 1.05, 0.05, panel, 0, 0.525, -RZ + 0.025, room, false);
+    box(2*RX, 0.06, 0.09, rail, 0, 1.08, -RZ + 0.045, room, false);
+    box(2*RX, 0.14, 0.07, base, 0, 0.07, -RZ + 0.035, room, false);
+    box(0.05, 1.05, 2*RZ, panel, -RX + 0.025, 0.525, 0, room, false);
+    box(0.09, 0.06, 2*RZ, rail, -RX + 0.045, 1.08, 0, room, false);
+    box(0.07, 0.14, 2*RZ, base, -RX + 0.035, 0.07, 0, room, false);
+  })();
+
+  // окно на задней стене
+  (function buildWindow(){
+    var cx = 1.6, cy = 2.05, w = 2.3, h = 1.5, z = -RZ;
+    var sky = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({color:'#BFE3F2'}));
+    sky.position.set(cx, cy, z + 0.012); room.add(sky);
+    var hill = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({color:'#9DBF8A'}));
+    hill.scale.set(1.5, 0.5, 1); hill.position.set(cx - 0.4, cy - h/2 - 0.05, z + 0.016); room.add(hill);
+    var hill2 = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({color:'#86A978'}));
+    hill2.scale.set(1.3, 0.38, 1); hill2.position.set(cx + 0.7, cy - h/2 - 0.02, z + 0.02); room.add(hill2);
+    [[-0.5,0.35,0.34,0.1],[0.1,0.42,0.26,0.08],[0.6,0.28,0.3,0.09]].forEach(function(c){
+      var cloud = new THREE.Mesh(new THREE.CircleGeometry(1, 28), new THREE.MeshBasicMaterial({color:'#FFFFFF'}));
+      cloud.scale.set(c[2], c[3], 1); cloud.position.set(cx + c[0], cy + c[1], z + 0.024); room.add(cloud);
+    });
+    var fr = M('#F3EAD8');
+    box(w + 0.2, 0.1, 0.12, fr, cx, cy + h/2 + 0.05, z + 0.06, room, false);
+    box(w + 0.2, 0.1, 0.12, fr, cx, cy - h/2 - 0.05, z + 0.06, room, false);
+    box(0.1, h, 0.12, fr, cx - w/2 - 0.05, cy, z + 0.06, room, false);
+    box(0.1, h, 0.12, fr, cx + w/2 + 0.05, cy, z + 0.06, room, false);
+    box(0.06, h, 0.1, fr, cx, cy, z + 0.06, room, false);
+    box(w, 0.06, 0.1, fr, cx, cy + 0.1, z + 0.06, room, false);
+    box(w + 0.4, 0.07, 0.36, fr, cx, cy - h/2 - 0.12, z + 0.16, room);
+    var cur = M('#C27D5B');
+    for(var side = -1; side <= 1; side += 2){
+      for(var i = 0; i < 4; i++) box(0.12, h + 0.45, 0.1, cur, cx + side * (w/2 + 0.22 + i*0.1), cy + 0.05, z + 0.12 + (i%2)*0.04, room, false);
+    }
+    box(w + 1.2, 0.05, 0.05, M('#5B3F2A'), cx, cy + h/2 + 0.32, z + 0.14, room, false);
+    var patch = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 3.0), new THREE.MeshBasicMaterial({color:'#FFF3CE', transparent:true, opacity:0.14, depthWrite:false}));
+    patch.rotation.x = -Math.PI/2; patch.rotation.z = 0.22; patch.position.set(cx + 0.4, 0.012, z + 2.0); room.add(patch);
+  })();
+
+  // ковёр
+  (function buildRug(){
+    var layers = [[1.0,'#B4573F',0.03],[0.88,'#E9D8B8',0.036],[0.76,'#B4573F',0.042],[0.5,'#D9A441',0.048]];
+    layers.forEach(function(l){
+      var m = cyl(1, 1, l[2], M(l[1], {roughness:0.95}), -0.2, l[2]/2, 0.25, room, 56, false);
+      m.scale.set(2.35 * l[0], 1, 3.1 * l[0]);
+    });
+  })();
+
+  // книжный шкаф у левой стены
+  (function buildShelf(){
+    var g = new THREE.Group(); g.position.set(-RX + 0.22, 0, 0.3); room.add(g);
+    var wood = M('#8A5A3B'), dark = M('#5B3F2A');
+    var Wd = 2.5, H = 2.3, Dp = 0.4;
+    box(Dp, H, 0.06, wood, 0, H/2, -Wd/2, g); box(Dp, H, 0.06, wood, 0, H/2, Wd/2, g);
+    box(0.04, H, Wd, dark, -Dp/2 + 0.02, H/2, 0, g);
+    for(var i = 0; i <= 4; i++) box(Dp, 0.05, Wd, wood, 0, 0.1 + i * 0.55, 0, g);
+    var r = rng(21);
+    var cols = ['#B5533C','#4F7A6B','#D9A441','#3E5C8A','#8A6FA8','#E9D8B8','#C86B4A','#5E8F55'];
+    for(var s = 0; s < 4; s++){
+      var zc = -Wd/2 + 0.12, base = 0.125 + s * 0.55;
+      while(zc < Wd/2 - 0.2){
+        var bw = 0.05 + r() * 0.07, bh = 0.26 + r() * 0.17;
+        if(r() < 0.1){ zc += 0.22; continue; }
+        var b = box(0.26, bh, bw, M(cols[Math.floor(r()*cols.length)]), 0.02, base + bh/2, zc + bw/2, g);
+        b.rotation.x = (r() - 0.5) * 0.05;
+        zc += bw + 0.008;
+      }
+    }
+    sph(0.14, M('#6FA3B8'), 0.02, 2.3 + 0.14, -0.7, g, 1, 1, 1);
+    cyl(0.03, 0.05, 0.1, dark, 0.02, 2.33, -0.7, g, 12);
+    plantPot(g, 0.0, 2.33, 0.6, 0.55, 'bush');
+  })();
+
+  function plantPot(parent, x, y, z, s, kind){
+    var g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); parent.add(g);
+    var pot = M('#B86B4B');
+    cyl(0.26, 0.19, 0.38, pot, 0, 0.19, 0, g, 20);
+    cyl(0.28, 0.28, 0.06, M('#C9805C'), 0, 0.4, 0, g, 20);
+    cyl(0.22, 0.22, 0.04, M('#3A2A20'), 0, 0.42, 0, g, 20);
+    var leaf = [M('#4F7A4A'), M('#5E8F55'), M('#3F6A45'), M('#6E9F5C')];
+    var r = rng(Math.floor(x * 31 + z * 17 + 5));
+    if(kind === 'ficus'){
+      cyl(0.04, 0.06, 1.1, M('#6B4A32'), 0, 0.95, 0, g, 10);
+      for(var i = 0; i < 16; i++){
+        var a = r() * Math.PI * 2, rad = 0.2 + r() * 0.35, hh = 1.2 + r() * 0.85;
+        sph(0.2 + r() * 0.1, leaf[i % 4], Math.cos(a) * rad, hh, Math.sin(a) * rad, g, 1, 0.85, 1);
+      }
+    } else if(kind === 'fern'){
+      for(var j = 0; j < 14; j++){
+        var an = j / 14 * Math.PI * 2 + r() * 0.3;
+        var lf = sph(0.13, leaf[j % 4], 0, 0, 0, g, 0.35, 0.05, 1.3);
+        lf.position.set(Math.cos(an) * 0.2, 0.7 + (j % 3) * 0.12, Math.sin(an) * 0.2);
+        lf.rotation.y = -an + Math.PI / 2; lf.rotation.x = -0.7;
+      }
+    } else {
+      for(var q = 0; q < 9; q++){
+        var aa = r() * Math.PI * 2, rr = r() * 0.14;
+        sph(0.16 + r() * 0.06, leaf[q % 4], Math.cos(aa) * rr, 0.6 + r() * 0.3, Math.sin(aa) * rr, g, 1, 0.9, 1);
+      }
+    }
+    return g;
+  }
+
+  plantPot(room, -RX + 0.7, 0, -RZ + 0.7, 1.35, 'ficus');
+  plantPot(room, RX - 0.6, 0, -RZ + 0.6, 1.1, 'fern');
+  plantPot(room, RX - 0.55, 0, 2.2, 0.9, 'bush');
+
+  // напольный светильник
+  (function buildFloorLamp(){
+    var g = new THREE.Group(); g.position.set(RX - 0.7, 0, -1.7); room.add(g);
+    cyl(0.2, 0.22, 0.05, M('#3A3430'), 0, 0.025, 0, g, 20);
+    cyl(0.025, 0.025, 1.6, M('#3A3430'), 0, 0.85, 0, g, 10);
+    var shade = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.32, 0.4, 24, 1, true), new THREE.MeshStandardMaterial({color:'#F1DDB4', emissive:'#FFD08A', emissiveIntensity:0.6, side:THREE.DoubleSide, roughness:0.9}));
+    put(shade, 0, 1.75, 0, g, false, false);
+    var l = new THREE.PointLight(0xffd29a, 0.55 * K * (rev >= 155 ? 6 : 1), 7, 2);
+    l.position.set(0, 1.7, 0); g.add(l);
+  })();
+
+  // картины на левой стене
+  [[-2.9, 1.95, '#D9A441', '#5E8F55'], [3.0, 1.9, '#6FA3B8', '#C86B4A']].forEach(function(p){
+    var g = new THREE.Group(); g.position.set(-RX + 0.06, p[1], p[0]); room.add(g);
+    box(0.06, 0.9, 1.2, M('#3A2A20'), 0, 0, 0, g, false);
+    box(0.07, 0.74, 1.04, M('#F3EAD8'), 0.005, 0, 0, g, false);
+    var sun = new THREE.Mesh(new THREE.CircleGeometry(0.17, 28), new THREE.MeshBasicMaterial({color:p[2]}));
+    sun.rotation.y = Math.PI/2; sun.position.set(0.045, 0.14, 0.18); g.add(sun);
+    var hl = new THREE.Mesh(new THREE.CircleGeometry(0.5, 32), new THREE.MeshBasicMaterial({color:p[3]}));
+    hl.rotation.y = Math.PI/2; hl.scale.set(1, 0.5, 1); hl.position.set(0.045, -0.37, -0.1); g.add(hl);
+  });
+
+  // полка на задней стене
+  (function buildWallShelf(){
+    var g = new THREE.Group(); g.position.set(-3.2, 2.1, -RZ + 0.2); room.add(g);
+    box(1.6, 0.06, 0.34, M('#8A5A3B'), 0, 0, 0, g);
+    var r = rng(5), cols = ['#C86B4A','#3E5C8A','#D9A441','#5E8F55'];
+    for(var i = 0; i < 6; i++){ var h = 0.24 + r()*0.12; box(0.07, h, 0.22, M(cols[i%4]), -0.7 + i*0.09, 0.03 + h/2, 0, g); }
+    plantPot(g, 0.45, 0.03, 0, 0.42, 'bush');
+    sph(0.1, M('#E9D8B8'), 0.1, 0.13, 0.02, g);
+  })();
+
+  // кофе-зона у задней стены: тумба, кофемашина, кружки
+  var ledMat = null;
+  (function buildCoffeeZone(){
+    var g = new THREE.Group(); g.position.set(-1.0, 0, -3.92); room.add(g);
+    var wood = M('#8A5A3B'), top = M('#C9976A', {roughness:0.55}), dark = M('#3B3836', {roughness:0.5});
+    box(1.9, 0.86, 0.46, wood, 0, 0.43, 0, g);
+    box(1.96, 0.05, 0.5, top, 0, 0.885, 0, g);
+    box(0.88, 0.62, 0.02, M('#7A5236'), -0.47, 0.45, 0.235, g, false);
+    box(0.88, 0.62, 0.02, M('#7A5236'), 0.47, 0.45, 0.235, g, false);
+    var mach = new THREE.Group(); mach.position.set(0.45, 0.91, -0.02); g.add(mach);
+    box(0.4, 0.5, 0.32, dark, 0, 0.25, 0, mach);
+    box(0.42, 0.06, 0.34, M('#2A2827'), 0, 0.53, 0, mach);
+    cyl(0.1, 0.12, 0.14, M('#6B3F2A'), 0, 0.63, -0.04, mach, 16);
+    box(0.3, 0.2, 0.02, M('#5A5653'), 0, 0.34, 0.165, mach, false);
+    cyl(0.02, 0.02, 0.1, M('#B8B2A6', {metalness:0.5, roughness:0.35}), 0, 0.25, 0.12, mach, 10);
+    box(0.32, 0.03, 0.2, M('#5A5653'), 0, 0.09, 0.1, mach);
+    cyl(0.04, 0.035, 0.08, M('#F0E4CC'), 0, 0.15, 0.12, mach, 16);
+    ledMat = new THREE.MeshStandardMaterial({color:'#7CC48A', emissive:'#7CC48A', emissiveIntensity:0.35, roughness:0.4});
+    var led = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), ledMat);
+    led.position.set(0.1, 0.43, 0.176); mach.add(led);
+    ['#F0E4CC', '#C86B4A', '#6FA3B8'].forEach(function(c, i){
+      cyl(0.045, 0.04, 0.09, M(c), -0.62 + i * 0.15, 0.955, 0.05, g, 16);
+      var hd = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 6, 12, Math.PI), M(c));
+      hd.position.set(-0.62 + i * 0.15 + 0.045, 0.955, 0.05); hd.rotation.z = -Math.PI / 2; g.add(hd);
+    });
+    cyl(0.09, 0.09, 0.22, M('#E9D8B8'), -0.05, 1.0, -0.1, g, 18);
+    cyl(0.095, 0.095, 0.03, M('#B88A5E'), -0.05, 1.125, -0.1, g, 18);
+    box(1.5, 0.05, 0.22, wood, -0.2, 1.75, -0.12, g);
+    ['#F0E4CC', '#C9A24A', '#8A6FA8'].forEach(function(c, i){ cyl(0.04, 0.036, 0.08, M(c), -0.7 + i * 0.2, 1.815, -0.12, g, 14); });
+  })();
+
+  // входная дверь на задней стене: створка открывается, когда кто-то входит или уходит
+  var doorLeaf = null;
+  (function buildDoor(){
+    var cx = 3.75, w = 0.88, h = 2.1, z = -RZ + 0.1;
+    var frame = M('#F3EAD8');
+    box(w + 0.2, 0.1, 0.12, frame, cx, h + 0.05, z, room, false);
+    box(0.1, h, 0.12, frame, cx - w/2 - 0.05, h/2, z, room, false);
+    box(0.1, h, 0.12, frame, cx + w/2 + 0.05, h/2, z, room, false);
+    box(w, h, 0.03, M('#2A211B'), cx, h/2, z - 0.045, room, false);
+    var hinge = new THREE.Group(); hinge.position.set(cx - w/2, 0, z + 0.015); room.add(hinge);
+    box(w, h - 0.02, 0.05, M('#7A5236'), w/2, h/2, 0, hinge);
+    sph(0.035, M('#C9A24A'), w - 0.1, 1.0, 0.045, hinge);
+    doorLeaf = hinge;
+  })();
+
+  /* ---- человечек ---- */
+  var UP = new THREE.Vector3(0, 1, 0);
+  var _d = new THREE.Vector3(), _e = new THREE.Vector3(), _p = new THREE.Vector3(), _dir = new THREE.Vector3(), _t = new THREE.Vector3();
+  function limb(r, mat, parent){
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 12), mat);
+    m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+  }
+  function placeLimb(m, a, b){
+    _d.subVectors(b, a);
+    var len = _d.length();
+    if(len < 1e-5) return;
+    m.position.copy(a).addScaledVector(_d, 0.5);
+    m.scale.set(1, len, 1);
+    m.quaternion.setFromUnitVectors(UP, _d.multiplyScalar(1 / len));
+  }
+  function solveArm(sh, tg, L1, L2, pole, up, fo, elbowJ, hand){
+    _dir.subVectors(tg, sh);
+    var dist = _dir.length();
+    var maxD = L1 + L2 - 0.005;
+    if(dist > maxD) dist = maxD;
+    if(dist < 0.14) dist = 0.14;
+    _dir.normalize();
+    var a = (L1*L1 - L2*L2 + dist*dist) / (2 * dist);
+    var h = Math.sqrt(Math.max(L1*L1 - a*a, 0));
+    _p.copy(pole);
+    _p.addScaledVector(_dir, -_p.dot(_dir)).normalize();
+    _e.copy(sh).addScaledVector(_dir, a).addScaledVector(_p, h);
+    _t.copy(sh).addScaledVector(_dir, dist);
+    placeLimb(up, sh, _e); placeLimb(fo, _e, _t);
+    elbowJ.position.copy(_e); hand.position.copy(_t);
+  }
+
+  function buildPerson(look){
+    var g = new THREE.Group();
+    var skin = M(look.skin), hairM = M(look.hair), shirt = M(look.shirt), pants = M(look.pants), shoe = M('#3A2E28');
+    var body = new THREE.Group(); g.add(body);
+    var P = {group:g, body:body, legs:[]};
+    // ноги: суставы считаются каждый кадр в poseActor (сидит, стоит, шаг)
+    [-1, 1].forEach(function(s){
+      var th = limb(0.085, pants, g), sh = limb(0.065, pants, g);
+      var kn = sph(0.087, pants, 0, 0, 0, g);
+      var ft = box(0.13, 0.08, 0.27, shoe, s*0.13, 0.045, 0.52, g);
+      P.legs.push({s:s, th:th, sh:sh, kn:kn, ft:ft, ank:{position:new THREE.Vector3(s*0.13, 0.1, 0.43)}});
+    });
+    sph(0.19, pants, 0, 0.53, -0.04, body, 1.15, 0.55, 1.05);
+    // верх тела
+    var upper = new THREE.Group(); upper.position.set(0, 0.52, -0.03); body.add(upper);
+    var torso = cyl(0.2, 0.185, 0.62, shirt, 0, 0.29, 0, upper, 24); torso.scale.set(1.28, 1, 0.82);
+    cyl(0.06, 0.07, 0.12, skin, 0, 0.64, 0.01, upper, 12);
+    P.upper = upper;
+    var head = new THREE.Group(); head.position.set(0, 0.87, 0.04); upper.add(head); P.head = head;
+    var R = 0.23;
+    sph(R, skin, 0, 0, 0, head, 1, 1.05, 1);
+    sph(0.045, skin, -R, -0.01, -0.01, head, 0.5, 1, 1); sph(0.045, skin, R, -0.01, -0.01, head, 0.5, 1, 1);
+    sph(0.034, M(shade(look.skin, 0.93)), 0, -0.025, R * 0.97, head, 1, 1, 0.8);
+    [-1, 1].forEach(function(s){
+      sph(0.04, M('#FFFFFF', {roughness:0.4}), s*0.085, 0.03, 0.205, head, 1, 1, 0.55, false);
+      sph(0.021, M('#2A2320', {roughness:0.3}), s*0.085, 0.03, 0.222, head, 1, 1, 0.6, false);
+      var br = box(0.08, 0.016, 0.02, hairM, s*0.085, 0.092, 0.208, head, false); br.rotation.z = -s * 0.12;
+      sph(0.04, M('#E8A09A'), s*0.135, -0.045, 0.17, head, 1, 1, 0.3, false);
+    });
+    var mouth = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.008, 6, 14, Math.PI), M('#8C3B3B'));
+    mouth.rotation.z = Math.PI; mouth.position.set(0, -0.06, 0.218); head.add(mouth);
+    // волосы
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(R * 1.07, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.52), hairM);
+    cap.scale.y = 1.05; cap.rotation.x = -0.5; cap.castShadow = true; head.add(cap);
+    if(look.hairStyle === 'bun'){
+      sph(0.19, hairM, 0, 0.02, -0.08, head, 1, 1.05, 0.9);
+      sph(0.1, hairM, 0, 0.26, -0.1, head);
+    } else if(look.hairStyle === 'short'){
+      sph(0.19, hairM, 0, 0.0, -0.06, head, 1, 1.0, 0.9);
+      box(0.03, 0.12, 0.05, hairM, -R + 0.005, 0.03, 0.06, head, false); box(0.03, 0.12, 0.05, hairM, R - 0.005, 0.03, 0.06, head, false);
+    } else if(look.hairStyle === 'curly'){
+      var rr = rng(99);
+      for(var i = 0; i < 26; i++){
+        var th = Math.acos(1 - rr() * 0.9), ph = rr() * Math.PI * 2;
+        var x = Math.sin(th) * Math.cos(ph), y = Math.cos(th), z = Math.sin(th) * Math.sin(ph);
+        if(z > 0.45 && y < 0.7) continue;
+        sph(0.055, hairM, x * R * 1.03, y * R * 1.08, z * R * 1.03 - 0.01, head);
+      }
+      sph(0.19, hairM, 0, 0.0, -0.07, head, 1, 1.0, 0.9);
+    }
+    if(look.beard){
+      var beard = new THREE.Mesh(new THREE.SphereGeometry(R * 1.04, 28, 16, 0, Math.PI * 2, Math.PI * 0.66, Math.PI * 0.34), hairM);
+      beard.scale.y = 1.05; beard.castShadow = true; head.add(beard);
+      box(0.12, 0.022, 0.03, hairM, 0, -0.035, 0.222, head, false);
+    }
+    if(look.glasses){
+      var gm = M('#2A2523', {roughness:0.4});
+      [-1, 1].forEach(function(s){
+        var ring = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.0085, 6, 22), gm);
+        ring.position.set(s*0.085, 0.03, 0.226); head.add(ring);
+        box(0.008, 0.008, 0.2, gm, s*0.213, 0.03, 0.12, head, false);
+      });
+      box(0.04, 0.009, 0.009, gm, 0, 0.038, 0.228, head, false);
+    }
+    if(look.headphones){
+      var hm = M('#2F3B4C', {roughness:0.5});
+      var band = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.017, 8, 28, Math.PI), hm);
+      band.scale.x = 0.84; band.position.set(0, 0.0, -0.01); band.castShadow = true; head.add(band);
+      [-1, 1].forEach(function(s){
+        var cup = cyl(0.08, 0.08, 0.06, M('#E8873A', {roughness:0.5}), s*0.262, 0, 0, head, 18); cup.rotation.z = Math.PI / 2;
+      });
+    }
+    // плечи, руки
+    var sleeveFull = look.sleeve !== 'short';
+    var armMatUp = shirt, armMatLow = sleeveFull ? shirt : skin;
+    P.arms = [];
+    [-1, 1].forEach(function(s){
+      var shoulder = new THREE.Vector3(s*0.26, 1.04, -0.03);
+      sph(0.09, shirt, shoulder.x, shoulder.y, shoulder.z, body);
+      var upA = limb(0.058, armMatUp, body), foA = limb(0.05, armMatLow, body);
+      var ej = sph(0.057, armMatUp, 0, 0, 0, body);
+      var hand = sph(0.05, skin, 0, 0, 0, body, 1, 0.7, 1.15);
+      P.arms.push({s:s, shoulder:shoulder, up:upA, fo:foA, ej:ej, hand:hand, pole:new THREE.Vector3(s*0.7, -1, -0.35)});
+    });
+    // кружка: показывается только когда человек её держит
+    var mugG = new THREE.Group(); body.add(mugG);
+    cyl(0.045, 0.04, 0.09, M('#F0E4CC'), 0, 0, 0, mugG, 16);
+    cyl(0.038, 0.038, 0.006, M('#4A2E1F'), 0, 0.044, 0, mugG, 16, false);
+    var mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 6, 12, Math.PI), M('#F0E4CC'));
+    mugHandle.position.set(0.045, 0, 0); mugHandle.rotation.z = -Math.PI / 2; mugG.add(mugHandle);
+    mugG.visible = false;
+    P.mug = mugG;
+    return P;
+  }
+  function shade(hex, f){
+    var c = new THREE.Color(hex);
+    return '#' + new THREE.Color(Math.min(1, c.r * f), Math.min(1, c.g * f), Math.min(1, c.b * f)).getHexString();
+  }
+
+  /* ---- рабочее место ---- */
+  function buildSeat(index, seat, look, pos, total){
+    var g = new THREE.Group();
+    g.position.set(pos.x, 0, pos.z);
+    g.rotation.y = Math.PI / 2;
+    g.userData.seatIndex = index;
+    var S0 = {group:g, index:index, free:seat.type === 'free', phase:index * 1.7, anim:{amp:0, target:0, freq:8, motion:null, snap:true}};
+    var wood = M('#B98558', {roughness:0.62}), woodD = M('#8F6140', {roughness:0.7});
+    // стол
+    box(1.7, 0.06, 0.8, wood, 0, 0.75, 0.72, g);
+    box(1.72, 0.02, 0.82, M('#C9976A', {roughness:0.6}), 0, 0.787, 0.72, g, false);
+    box(0.045, 0.72, 0.74, woodD, -0.82, 0.36, 0.72, g);
+    box(0.45, 0.62, 0.74, woodD, 0.58, 0.41, 0.72, g);
+    box(0.4, 0.015, 0.02, M('#D9C9A8'), 0.58, 0.55, 0.335, g, false);
+    box(0.4, 0.015, 0.02, M('#D9C9A8'), 0.58, 0.3, 0.335, g, false);
+    // кресло
+    var chairColor = look ? look.chair : '#7A7468';
+    var chair = new THREE.Group(); chair.position.set(0, 0, -0.05); g.add(chair);
+    if(S0.free){ chair.rotation.y = 0.55; chair.position.set(-0.1, 0, -0.2); }
+    var fab = M(chairColor, {roughness:0.9});
+    cyl(0.03, 0.03, 0.3, M('#2E2A27'), 0, 0.28, 0, chair, 10);
+    for(var i = 0; i < 5; i++){
+      var a = i / 5 * Math.PI * 2;
+      var leg = box(0.28, 0.03, 0.04, M('#2E2A27'), Math.cos(a) * 0.14, 0.1, Math.sin(a) * 0.14, chair);
+      leg.rotation.y = -a;
+      sph(0.025, M('#1E1B19'), Math.cos(a) * 0.27, 0.035, Math.sin(a) * 0.27, chair);
+    }
+    box(0.5, 0.08, 0.48, fab, 0, 0.46, 0, chair);
+    var back = box(0.48, 0.5, 0.07, fab, 0, 0.76, -0.24, chair); back.rotation.x = -0.08;
+    box(0.04, 0.2, 0.3, M('#2E2A27'), -0.27, 0.62, -0.02, chair); box(0.04, 0.2, 0.3, M('#2E2A27'), 0.27, 0.62, -0.02, chair);
+    // техника
+    var kb = box(0.44, 0.025, 0.15, M('#2E2B29', {roughness:0.5}), 0, 0.8, 0.58, g);
+    for(var k2 = 0; k2 < 3; k2++) box(0.4, 0.008, 0.028, M('#4A4642'), 0, 0.816, 0.54 + k2 * 0.04, g, false);
+    sph(0.05, M('#2E2B29'), 0.34, 0.805, 0.58, g, 1, 0.55, 1.4);
+    // монитор
+    var mon = new THREE.Group(); mon.position.set(0, 0.78, 0.98); mon.rotation.y = Math.PI + 0.55; g.add(mon);
+    cyl(0.14, 0.15, 0.02, M('#2A2724'), 0, 0.01, 0, mon, 20);
+    box(0.05, 0.24, 0.03, M('#2A2724'), 0, 0.14, 0, mon);
+    var bez = box(0.7, 0.42, 0.04, M('#26231F', {roughness:0.5}), 0, 0.4, 0, mon);
+    var screenMat = new THREE.MeshStandardMaterial({color:'#15130F', emissive:'#000000', emissiveIntensity:1, roughness:0.35});
+    var screen = new THREE.Mesh(new THREE.PlaneGeometry(0.64, 0.36), screenMat);
+    screen.position.set(0, 0.4, 0.0215); mon.add(screen);
+    var orbMat = new THREE.MeshStandardMaterial({color:'#444', emissive:'#444', emissiveIntensity:0.8, roughness:0.3});
+    var orb = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), orbMat);
+    orb.position.set(0, 0.64, -0.04); mon.add(orb);
+    S0.screenMat = screenMat; S0.orbMat = orbMat;
+    // предметы на столе
+    var mug = cyl(0.045, 0.04, 0.09, M('#F0E4CC'), -0.55, 0.835, 0.9, g, 16);
+    var handle = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 6, 12, Math.PI), M('#F0E4CC')); handle.position.set(-0.505, 0.835, 0.9); handle.rotation.z = -Math.PI / 2; g.add(handle);
+    var nb = box(0.2, 0.02, 0.28, M(look ? shade(look.shirt, 0.85) : '#8A7F6A'), -0.35, 0.805, 0.62, g); nb.rotation.y = 0.2;
+    cyl(0.055, 0.045, 0.07, M('#B86B4B'), 0.7, 0.815, 1.02, g, 14);
+    sph(0.05, M('#6E9F5C'), 0.7, 0.88, 1.02, g, 1, 0.8, 1);
+    // лампа
+    var lamp = new THREE.Group(); lamp.position.set(-0.7, 0.78, 1.0); g.add(lamp);
+    cyl(0.09, 0.1, 0.025, M('#3A3430'), 0, 0.013, 0, lamp, 18);
+    cyl(0.011, 0.011, 0.3, M('#3A3430'), 0, 0.17, 0, lamp, 8);
+    var arm = cyl(0.01, 0.01, 0.25, M('#3A3430'), 0.06, 0.34, 0.0, lamp, 8); arm.rotation.z = -1.1;
+    var lshade = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.12, 0.13, 20, 1, true), new THREE.MeshStandardMaterial({color:'#E8873A', emissive:'#FFB25A', emissiveIntensity:0.55, side:THREE.DoubleSide, roughness:0.8}));
+    lshade.position.set(0.17, 0.42, 0); lshade.rotation.z = 0.25; lamp.add(lshade);
+    var pl = new THREE.PointLight(0xffd29a, 0.5 * K * (rev >= 155 ? 6 : 1), 3.6, 2);
+    pl.position.set(0.17, 0.36, 0.0); lamp.add(pl);
+    // кольцо выбора
+    var ringMat = new THREE.MeshBasicMaterial({color:'#E8B05A', transparent:true, opacity:0.85, side:THREE.DoubleSide, depthWrite:false});
+    var ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 56), ringMat);
+    ring.rotation.x = -Math.PI / 2; ring.position.set(0, 0.025, 0.55); ring.scale.set(1.12, 1.0, 0.98); ring.visible = false; g.add(ring);
+    S0.ring = ring; S0.ringMat = ringMat;
+    S0.agentId = seat.type === 'agent' ? seat.id : null; /* человек живёт отдельно (actors) и может отойти от стола */
+    g.traverse(function(o){ o.userData.seatIndex = index; });
+    S0.anchor = new THREE.Vector3(0, 1.95, 0.2);
+    return S0;
+  }
+
+  /* ---- управление местами ---- */
+  var seatsGroup = new THREE.Group(); scene.add(seatsGroup);
+  var seatObjs = [];
+  function disposeGroup(grp){
+    grp.traverse(function(o){
+      if(o.geometry) o.geometry.dispose();
+      if(o.material && !(o.material.userData && o.material.userData.shared) && o.material.__own) o.material.dispose();
+    });
+  }
+  function seatPos(i, total){
+    var rows = Math.ceil(total / 2), col = i % 2, row = Math.floor(i / 2);
+    return {x: col ? 1.75 : -2.75, z: (row - (rows - 1) / 2) * 2.35 + 0.15};
+  }
+  function setSeats(seats){
+    seatObjs.forEach(function(s){ seatsGroup.remove(s.group); disposeGroup(s.group); s.screenMat.dispose(); s.orbMat.dispose(); });
+    seatObjs = [];
+    seats.forEach(function(seat, i){
+      var look = seat.type === 'agent' ? lookFor(seat, i) : null;
+      var o = buildSeat(i, seat, look, seatPos(i, seats.length), seats.length);
+      seatsGroup.add(o.group);
+      seatObjs.push(o);
+    });
+    syncActors(seats);
+    scene3d.sig = S.seatSig;
+    needsRender = true;
+  }
+
+  /* ---- живые люди: состояния seated/standing/walking/coffee/chat, маршруты, дверь ---- */
+  var actorsGroup = new THREE.Group(); scene.add(actorsGroup);
+  var actors = Object.create(null), actorList = [], actorsInit = false, slotOwner = [null, null, null, null, null, null];
+  var bubbleNodes = Object.create(null);
+  var AISLE = -0.1, DOOR_X = 3.75, WALK_SPEED = 1.25, LIFT = 0.39;
+  var SLOTS = [
+    {x:-0.55, z:-3.12, face:Math.PI}, {x:-1.4, z:-3.12, face:Math.PI},
+    {x:-0.4, z:-2.35, face:null}, {x:-1.3, z:-2.35, face:null},
+    {x:-0.95, z:-1.8, face:null}, {x:0.45, z:-2.9, face:null}
+  ];
+  var CENTER = {x:-0.95, z:-2.7};
+  var BREAK_KINDS = {done:true, stale:true, unknown:true, waiting:true};
+  var doorOpen = 0;
+
+  function hashStr(s){
+    var h = 2166136261;
+    for(var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return h >>> 0;
+  }
+  function easeIO(u){ return u * u * (3 - 2 * u); }
+  function angDiff(from, to){
+    var d = to - from;
+    while(d > Math.PI) d -= 2 * Math.PI;
+    while(d < -Math.PI) d += 2 * Math.PI;
+    return d;
+  }
+  function turnTo(a, target, rate, dt){ a.heading += angDiff(a.heading, target) * Math.min(1, dt * rate); }
+
+  function lookFor(seat, i){
+    if(actors[seat.id]) return actors[seat.id].look;
+    var ki = -1;
+    KNOWN.forEach(function(k, idx){ if(k.id === seat.id) ki = idx; });
+    return LOOKS[ki >= 0 ? ki : Math.min(LOOKS.length - 1, 3 + ((i - KNOWN.length) % 3 + 3) % 3)];
+  }
+  function homeFor(i, total){
+    var p = seatPos(i, total);
+    return {px:p.x, pz:p.z, x:p.x - 0.05, z:p.z, col:i % 2};
+  }
+  function makeActor(id, look){
+    var person = buildPerson(look);
+    actorsGroup.add(person.group);
+    var h = hashStr(id);
+    return {
+      id:id, person:person, look:look, seatIndex:-1, home:null, h:h, ph:(h % 10) * 0.9,
+      x:0, z:0, heading:Math.PI / 2, lift:0, walk:0, gait:0, holdAmt:0, talkAmt:0, talkTarget:0, sip:0, hold:false,
+      phase:'seat', pose:'seated', purpose:null, route:[], outRoute:[], ri:0, timer:0, slot:-1, zoneLen:8, extra:0,
+      leaving:false, removed:false, view:null, bubble:'', bubbleUntil:0, sitFrom:null, pendingRoute:null,
+      nextBreak:6 + (h % 6) * 5, rate:38 + (h % 7) * 8, cycles:0,
+      anim:{amp:0, target:0, freq:8, motion:null, snap:true}, dirty:true
+    };
+  }
+  function placeHome(a){
+    releaseSlot(a);
+    a.phase = 'seat'; a.pose = 'seated'; a.purpose = null;
+    a.x = a.home.x; a.z = a.home.z; a.heading = Math.PI / 2;
+    a.lift = 0; a.walk = 0; a.holdAmt = 0; a.talkAmt = 0; a.talkTarget = 0; a.hold = false; a.bubble = '';
+    a.person.group.visible = true; a.dirty = true;
+  }
+  function tagActor(a){
+    var idx = a.leaving ? -1 : a.seatIndex;
+    a.person.group.traverse(function(o){ o.userData.seatIndex = idx; });
+  }
+  function seatLeg(a){
+    var h = a.home;
+    if(h.col) return [{x:AISLE, z:h.pz}, {x:h.px - 0.85, z:h.pz}];
+    return [{x:AISLE, z:h.pz + 1.2}, {x:h.px - 0.8, z:h.pz + 1.2}, {x:h.px - 0.8, z:h.pz}];
+  }
+  function takeSlot(a){
+    if(a.slot >= 0) return a.slot;
+    for(var i = 0; i < slotOwner.length; i++){ if(!slotOwner[i]){ slotOwner[i] = a.id; a.slot = i; return i; } }
+    return -1;
+  }
+  function releaseSlot(a){
+    if(a.slot >= 0 && slotOwner[a.slot] === a.id) slotOwner[a.slot] = null;
+    a.slot = -1;
+  }
+  function coffeeRoute(a, slot){
+    var s = SLOTS[slot];
+    return seatLeg(a).slice().reverse().concat([{x:AISLE, z:-2.8}, {x:s.x, z:s.z}]);
+  }
+  function startRoute(a, route, purpose){
+    a.route = route; a.ri = 0; a.purpose = purpose; a.phase = 'walk';
+    if(purpose === 'coffee' || purpose === 'leave') a.outRoute = route;
+    a.bubbleUntil = purpose === 'coffee' ? animT + 1.4 : 0;
+  }
+  function beginRise(a, route, purpose){
+    a.phase = 'rise'; a.timer = 0; a.pendingRoute = route; a.purpose = purpose;
+    a.bubble = purpose === 'coffee' ? 'Кофе?' : '';
+  }
+  function startLeaveFromSeat(a){
+    beginRise(a, seatLeg(a).slice().reverse().concat([{x:AISLE, z:-3.5}, {x:DOOR_X, z:-3.5}, {x:DOOR_X, z:-4.1}]), 'leave');
+  }
+  function beginArrival(a){
+    a.phase = 'door'; a.purpose = 'arrive'; a.timer = 0; a.pose = 'standing';
+    a.x = DOOR_X; a.z = -4.05; a.heading = 0; a.lift = LIFT;
+    a.route = [{x:DOOR_X, z:-3.5}, {x:AISLE, z:-3.5}].concat(seatLeg(a));
+    a.person.group.visible = false;
+    a.nextBreak = animT + 25 + (a.h % 5) * 6;
+    a.dirty = true;
+  }
+  function breakOK(a){
+    var v = a.view;
+    return !!v && !v.typing && BREAK_KINDS[v.kind] === true;
+  }
+  function abortToDesk(a){
+    releaseSlot(a); a.talkTarget = 0; a.bubble = '';
+    if(a.phase === 'rise' || a.phase === 'sit'){
+      a.phase = 'sit'; a.timer = 0; a.sitFrom = {x:a.x, z:a.z, lift:a.lift}; a.purpose = 'home';
+      return;
+    }
+    var out = a.outRoute || [];
+    var passed = a.phase === 'zone' ? out.slice(0, -1) : out.slice(0, a.ri);
+    var back = passed.slice().reverse();
+    if(!back.length && out.length) back = [out[0]];
+    startRoute(a, back, 'home');
+  }
+  function removeActor(a){
+    if(a.removed) return;
+    a.removed = true;
+    releaseSlot(a);
+    actorsGroup.remove(a.person.group);
+    disposeGroup(a.person.group);
+    delete actors[a.id];
+    actorList.splice(actorList.indexOf(a), 1);
+    var n = bubbleNodes[a.id];
+    if(n && n.parentNode) n.parentNode.removeChild(n);
+    delete bubbleNodes[a.id];
+    needsRender = true;
+  }
+  function beginLeave(a){
+    if(a.leaving) return;
+    a.leaving = true;
+    tagActor(a);
+    if(a.phase === 'door'){ removeActor(a); return; }
+    if(a.phase === 'seat') startLeaveFromSeat(a);
+    else if(a.purpose === 'coffee') abortToDesk(a); /* дойдёт до стола, и finishSit отправит к двери */
+  }
+  function syncActors(seats){
+    var present = Object.create(null);
+    seats.forEach(function(seat, i){
+      if(seat.type !== 'agent') return;
+      present[seat.id] = true;
+      var home = homeFor(i, seats.length);
+      var a = actors[seat.id];
+      if(!a){
+        a = makeActor(seat.id, lookFor(seat, i));
+        actors[seat.id] = a; actorList.push(a);
+        a.home = home; a.seatIndex = i;
+        if(actorsInit) beginArrival(a); else placeHome(a);
+      } else {
+        var moved = Math.abs(a.home.px - home.px) + Math.abs(a.home.pz - home.pz) > 0.01;
+        a.home = home; a.seatIndex = i;
+        if(a.leaving){
+          a.leaving = false;
+          if(a.purpose === 'leave' && (a.phase === 'walk' || a.phase === 'rise')) abortToDesk(a);
+        }
+        if(moved && a.phase === 'seat') placeHome(a);
+      }
+      tagActor(a);
+    });
+    actorList.slice().forEach(function(a){ if(!present[a.id]) beginLeave(a); });
+    actorsInit = true;
+  }
+
+  function finishSit(a){
+    var leaving = a.leaving;
+    placeHome(a);
+    a.cycles++;
+    a.nextBreak = animT + a.rate * (0.85 + 0.12 * (a.cycles % 4));
+    if(leaving) startLeaveFromSeat(a);
+  }
+  function nearbyOther(a){
+    var best = null, bd = 2.6;
+    actorList.forEach(function(o){
+      if(o === a || o.phase !== 'zone') return;
+      var d = Math.sqrt((o.x - a.x) * (o.x - a.x) + (o.z - a.z) * (o.z - a.z));
+      if(d < bd){ bd = d; best = o; }
+    });
+    return best;
+  }
+  function onRouteEnd(a){
+    if(a.purpose === 'coffee'){ a.phase = 'zone'; a.timer = 0; a.pose = 'coffee'; }
+    else if(a.purpose === 'leave'){ removeActor(a); }
+    else { a.phase = 'sit'; a.timer = 0; a.sitFrom = {x:a.x, z:a.z, lift:a.lift}; }
+  }
+  function driveWalk(a, dt){
+    var d = a.route[a.ri];
+    if(!d){ onRouteEnd(a); return; }
+    var dx = d.x - a.x, dz = d.z - a.z, dist = Math.sqrt(dx * dx + dz * dz);
+    var step = WALK_SPEED * dt;
+    if(dist > 0.001) turnTo(a, Math.atan2(dx, dz), 9, dt);
+    var moved = Math.min(dist, step);
+    if(dist <= step){ a.x = d.x; a.z = d.z; a.ri++; if(a.ri >= a.route.length) onRouteEnd(a); }
+    else { a.x += dx / dist * step; a.z += dz / dist * step; }
+    if(a.removed) return;
+    a.gait += moved / 1.2 * Math.PI * 2;
+    a.pose = 'walking';
+    a.bubble = animT < a.bubbleUntil ? 'Кофе?' : '';
+    if(a.purpose === 'leave' && a.z <= -3.95) a.person.group.visible = false;
+  }
+  function driveZone(a, dt){
+    var slot = SLOTS[a.slot], t = animT;
+    a.timer += dt;
+    if(a.timer > 1.6) a.hold = true;
+    var target = slot.face != null ? slot.face : Math.atan2(CENTER.x - a.x, CENTER.z - a.z);
+    var other = nearbyOther(a);
+    var chatting = !!(other && a.timer > 2.4 && other.timer > 1.2);
+    if(chatting) target = Math.atan2(other.x - a.x, other.z - a.z);
+    turnTo(a, target, 5, dt);
+    a.talkTarget = chatting ? 1 : 0;
+    a.pose = chatting ? 'chat' : 'coffee';
+    if(chatting){
+      var seg = Math.floor((t + (a.h % 2) * 1.3) / 2.6);
+      a.bubble = seg % 2 === 0 ? (seg % 4 === 0 ? 'Кофе?' : '…') : '';
+    } else a.bubble = '';
+    if(a.timer >= a.zoneLen){
+      releaseSlot(a); a.talkTarget = 0; a.bubble = '';
+      startRoute(a, a.outRoute.slice(0, -1).reverse(), 'home');
+    }
+  }
+  function driveActor(a, dt){
+    var t = animT, h = a.home;
+    if(a.purpose === 'coffee' && (a.phase === 'rise' || a.phase === 'walk' || a.phase === 'zone') && !a.leaving && !breakOK(a)) abortToDesk(a);
+    switch(a.phase){
+      case 'seat': {
+        a.pose = 'seated'; a.lift = 0; a.x = h.x; a.z = h.z; a.heading = Math.PI / 2; a.talkTarget = 0;
+        if(!a.leaving && a.nextBreak <= t && breakOK(a)){
+          var slot = takeSlot(a);
+          if(slot < 0){ a.nextBreak = t + 10; break; }
+          a.zoneLen = 8 + (a.h % 3) * 1.5 + a.extra; a.extra = 0;
+          beginRise(a, coffeeRoute(a, slot), 'coffee');
+        }
+        break;
+      }
+      case 'rise': {
+        a.timer += dt;
+        var u = easeIO(Math.min(1, a.timer / 1.1));
+        a.lift = LIFT * u;
+        a.x = h.x - Math.sin(a.heading) * 0.38 * u;
+        a.z = h.z - Math.cos(a.heading) * 0.38 * u;
+        a.pose = 'standing';
+        if(a.timer >= 1.1) startRoute(a, a.pendingRoute, a.purpose);
+        break;
+      }
+      case 'door': {
+        a.timer += dt; a.pose = 'standing';
+        if(a.timer > 0.5) a.person.group.visible = true;
+        if(a.timer > 0.9) startRoute(a, a.route, 'arrive');
+        break;
+      }
+      case 'walk': driveWalk(a, dt); break;
+      case 'zone': driveZone(a, dt); break;
+      case 'sit': {
+        a.timer += dt;
+        var k = easeIO(Math.min(1, a.timer / 1.0)), f = a.sitFrom;
+        a.x = f.x + (h.x - f.x) * k; a.z = f.z + (h.z - f.z) * k; a.lift = f.lift * (1 - k);
+        turnTo(a, Math.PI / 2, 8, dt);
+        if(a.timer > 0.6) a.hold = false;
+        a.pose = a.lift > 0.12 ? 'standing' : 'seated';
+        if(a.timer >= 1.0) finishSit(a);
+        break;
+      }
+    }
+  }
+  function gatherCoffee(){
+    var n = 0;
+    actorList.forEach(function(a){
+      if(a.leaving || a.phase !== 'seat' || !breakOK(a)) return;
+      a.nextBreak = animT + n * 0.8; a.extra = 8; n++;
+    });
+    return n;
+  }
+  scene3d.gather = gatherCoffee;
+  scene3d.actorStates = function(){
+    return actorList.map(function(a){
+      return {id:a.id, pose:a.pose, phase:a.phase, holding:a.holdAmt > 0.5, visible:a.person.group.visible, leaving:a.leaving};
+    });
+  };
+
+  function applyViews(views, selected){
+    seatObjs.forEach(function(o, i){
+      var v = views[i]; if(!v) return;
+      var actor = o.agentId ? actors[o.agentId] : null;
+      if(actor) actor.view = v;
+      var key =v.kind + '|' + (v.typing ? 1 : 0) + '|' + (v.motion || '') + '|' + (i === selected ? 1 : 0);
+      if(o.lastKey === key) return;
+      o.lastKey = key;
+      var m = v.motion && MOTION[v.motion];
+      o.motion = v.motion || null;
+      if(actor){
+        actor.anim.target = m ? m.amp : 0;
+        actor.anim.freq = m ? m.freq : 8;
+        actor.anim.motion = v.motion || null;
+        if(motionOff()) actor.anim.snap = true;
+      }
+      var hex = STATUS_HEX[v.kind] || STATUS_HEX.unknown;
+      o.orbMat.color.set(hex); o.orbMat.emissive.set(hex);
+      o.orbMat.emissiveIntensity = (o.free || v.kind === 'unknown' || v.kind === 'stale') ? 0.25 : 0.9;
+      if(o.free || v.kind === 'unknown'){ o.screenMat.emissive.set('#000000'); o.screenMat.emissiveIntensity = 1; }
+      else {
+        o.screenMat.emissive.set(hex);
+        o.screenMat.emissiveIntensity = v.typing ? 0.85 : (v.kind === 'stale' ? 0.12 : 0.3);
+      }
+      o.ring.visible = (i === selected);
+    });
+    needsRender = true;
+  }
+
+  /* ---- анимация ---- */
+  var animT = 0, needsRender = true;
+  var _hp = new THREE.Vector3(), _tg = new THREE.Vector3(), _arm = new THREE.Vector3(), _pole = new THREE.Vector3(0, 0, 1);
+  function poseActor(a, t, dt){
+    var p = a.person, an = a.anim;
+    an.amp += (an.target - an.amp) * (an.snap ? 1 : Math.min(1, dt * 5));
+    an.snap = false;
+    var k = Math.min(1, dt * 7);
+    a.walk += ((a.phase === 'walk' ? 1 : 0) - a.walk) * k;
+    a.holdAmt += ((a.hold ? 1 : 0) - a.holdAmt) * k;
+    a.talkAmt += ((a.talkTarget || 0) - a.talkAmt) * k;
+    var sipWant = (a.hold && a.phase === 'zone' && a.timer > 2.5) ? Math.pow(Math.max(0, Math.sin(t * 0.9 + a.ph)), 2) : 0;
+    a.sip += (sipWant - a.sip) * k;
+    var u = a.lift / LIFT;                 /* 0 сидит, 1 стоит */
+    var amp = an.amp * (1 - u), f = an.freq, ph = a.ph;
+    var bob = 0.022 * Math.abs(Math.sin(a.gait)) * a.walk;
+    p.group.position.set(a.x, 0, a.z);
+    p.group.rotation.y = a.heading;
+    p.body.position.y = a.lift + bob;
+    var breathe = Math.sin(t * 1.5 + ph) * 0.006;
+    /* ноги: сидя колени вперёд, стоя прямые, при шаге поднимается стопа */
+    p.legs.forEach(function(L){
+      var s = L.s, lp = a.gait + (s > 0 ? Math.PI : 0);
+      var ax = s * (0.13 + (0.11 - 0.13) * u);
+      var ay = 0.1 + Math.max(0, Math.cos(lp)) * 0.14 * a.walk;
+      var az = 0.43 + (0.0 - 0.43) * u + Math.sin(lp) * 0.3 * a.walk;
+      _hp.set(s * 0.12, 0.54 + a.lift + bob, -0.05);
+      _tg.set(ax, ay, az);
+      solveArm(_hp, _tg, 0.45, 0.47, _pole, L.th, L.sh, L.kn, L.ank);
+      L.ft.position.set(L.ank.position.x, L.ank.position.y - 0.055, L.ank.position.z + 0.09);
+      L.ft.rotation.x = -0.3 * Math.max(0, -Math.cos(lp)) * a.walk;
+    });
+    var seatedLean = 0.07 + breathe * 2.5 + amp * 0.025;
+    var standLean = 0.02 + 0.05 * a.walk + breathe * 1.5;
+    p.upper.rotation.x = seatedLean * (1 - u) + standLean * u - a.sip * 0.08;
+    var read = an.motion === 'read';
+    p.head.rotation.y = Math.sin(t * 0.45 + ph) * (read ? 0.1 : 0.05) * (1 - amp * 0.3) - 0.12 * amp + a.talkAmt * Math.sin(t * 1.3 + ph) * 0.12;
+    p.head.rotation.x = 0.04 + amp * 0.05 + (read ? Math.sin(t * 0.9 + ph) * 0.04 : 0) + breathe + a.talkAmt * Math.sin(t * 3.1 + ph) * 0.05 - a.sip * 0.1;
+    var blend = Math.min(1, amp * 1.6);
+    p.arms.forEach(function(arm){
+      var s = arm.s;
+      var per = s < 0 ? 0 : Math.PI;
+      var tap = amp * Math.max(0, Math.sin(t * f + per + ph)) * 0.022;
+      var sway = amp * Math.sin(t * f * 0.45 + per) * 0.025;
+      var rx = s * 0.2, ry = 0.8, rz = 0.4;
+      var ax = s * 0.12 + sway, ay = 0.822 + tap, az = 0.56 + amp * 0.012 * Math.sin(t * f * 0.5 + per);
+      var wx = rx + (ax - rx) * blend, wy = ry + (ay - ry) * blend, wz = rz + (az - rz) * blend;
+      /* стоя руки висят и качаются в противофазе ногам */
+      var armPh = a.gait + (s > 0 ? 0 : Math.PI);
+      var hx = s * 0.29, hy = 0.5, hz = 0.03 + Math.sin(armPh) * 0.2 * a.walk;
+      var tx = wx + (hx - wx) * u, ty = wy + (hy - wy) * u, tz = wz + (hz - wz) * u;
+      if(s > 0 && a.holdAmt > 0.01){
+        var cx = 0.17 - 0.12 * a.sip, cy = 0.78 + 0.47 * a.sip, cz = 0.34 - 0.08 * a.sip;
+        tx += (cx - tx) * a.holdAmt; ty += (cy - ty) * a.holdAmt; tz += (cz - tz) * a.holdAmt;
+      }
+      if(s < 0 && a.talkAmt > 0.01){
+        var gx = -0.26 + 0.04 * Math.sin(t * 2.1 + ph), gy = 0.9 + 0.1 * Math.sin(t * 2.6 + ph), gz = 0.3 + 0.06 * Math.cos(t * 2.0 + ph);
+        tx += (gx - tx) * a.talkAmt; ty += (gy - ty) * a.talkAmt; tz += (gz - tz) * a.talkAmt;
+      }
+      _arm.set(tx, ty, tz);
+      solveArm(arm.shoulder, _arm, 0.36, 0.34, arm.pole, arm.up, arm.fo, arm.ej, arm.hand);
+    });
+    var rh = p.arms[1].hand.position;
+    p.mug.position.set(rh.x, rh.y + 0.05, rh.z + 0.01);
+    p.mug.visible = a.holdAmt > 0.08;
+  }
+
+  function animate(dt){
+    var any = false, off = motionOff();
+    var calm = REDUCED || !!(S.snap && S.snap.static);
+    if(!off){ animT += dt; }
+    actorList.slice().forEach(function(a){
+      if(calm){
+        if(a.leaving){ removeActor(a); return; }
+        if(a.phase !== 'seat') placeHome(a);
+      }
+      if(!off){
+        driveActor(a, dt);
+        if(a.removed) return;
+        poseActor(a, animT, dt);
+        any = true;
+      } else if(a.dirty || a.anim.snap){
+        poseActor(a, animT, 0);
+        any = true;
+      }
+      a.dirty = false;
+    });
+    var brewing = slotOwner[0] && actors[slotOwner[0]] && actors[slotOwner[0]].phase === 'zone';
+    seatObjs.forEach(function(o){
+      if(o.ring.visible) o.ringMat.opacity = 0.85; /* без пульсации: кольцо только отмечает выбор */
+      if(o.motion && !off){
+        var flick = 1 + Math.sin(animT * 7 + o.phase) * 0.06;
+        o.screenMat.emissiveIntensity = 0.85 * flick;
+      }
+    });
+    if(!off){
+      var want = 0;
+      actorList.forEach(function(a){
+        if((a.purpose === 'arrive' || a.purpose === 'leave') &&
+           (a.phase === 'door' || (a.phase === 'walk' && Math.abs(a.x - DOOR_X) < 1.4 && a.z < -2.9))) want = 1;
+      });
+      doorOpen += (want - doorOpen) * Math.min(1, dt * 4);
+      if(doorLeaf) doorLeaf.rotation.y = -1.25 * doorOpen;
+      if(ledMat) ledMat.emissiveIntensity = brewing ? 0.6 + 0.4 * Math.sin(animT * 4) : 0.35;
+    }
+    if(any || !off) needsRender = true;
+  }
+
+  /* ---- камера ---- */
+  var cam = {az:45, target:45, el:34, min:12, max:78};
+  var TARGET = new THREE.Vector3(0, 1.1, 0.1);
+  var hold = 0;
+  function placeCamera(){
+    var az = cam.az * Math.PI / 180, el = cam.el * Math.PI / 180, R = 40;
+    camera.position.set(TARGET.x + R * Math.sin(az) * Math.cos(el), TARGET.y + R * Math.sin(el), TARGET.z + R * Math.cos(az) * Math.cos(el));
+    camera.lookAt(TARGET);
+    camera.updateMatrixWorld();
+  }
+  function fitCamera(w, h){
+    var aspect = w / Math.max(1, h);
+    var half = Math.max(6.3, 8.6 / aspect);
+    camera.left = -half * aspect; camera.right = half * aspect; camera.top = half; camera.bottom = -half;
+    camera.updateProjectionMatrix();
+  }
+  function rotateBy(deg){
+    cam.target = clamp(cam.target + deg, cam.min, cam.max);
+    if(REDUCED){ cam.az = cam.target; placeCamera(); } /* без плавности: положение камеры обновляется сразу */
+    needsRender = true;
+  }
+  scene3d.rotate = rotateBy;
+  function updateCamera(dt){
+    var moved = false;
+    if(hold){ cam.target = clamp(cam.target + hold * 22 * dt, cam.min, cam.max); }
+    var diff = cam.target - cam.az;
+    if(Math.abs(diff) > 0.01){
+      cam.az = REDUCED ? cam.target : cam.az + diff * Math.min(1, dt * 7);
+      moved = true;
+    } else if(diff !== 0){ cam.az = cam.target; moved = true; }
+    if(moved) placeCamera();
+    return moved;
+  }
+
+  /* ---- подписи над людьми ---- */
+  var _proj = new THREE.Vector3();
+  function syncTags(){
+    var rect = {w:canvas.clientWidth, h:canvas.clientHeight};
+    seatObjs.forEach(function(o, i){
+      var t = tagNodes[i]; if(!t) return;
+      _proj.copy(o.anchor || o.anchor);
+      o.group.localToWorld(_proj.set(0, 1.95, 0.2));
+      _proj.project(camera);
+      var x = (_proj.x * 0.5 + 0.5) * rect.w, y = (-_proj.y * 0.5 + 0.5) * rect.h;
+      var tw = t.root.offsetWidth;
+      t.root.style.transform = 'translate(' + Math.round(x - tw / 2) + 'px,' + Math.round(y - 28) + 'px)';
+    });
+    /* декоративные пузыри над головой: «Кофе?» и многоточие, это не реальная переписка */
+    actorList.forEach(function(a){
+      var n = bubbleNodes[a.id];
+      if(!a.bubble || !a.person.group.visible){ if(n && !n.hidden) n.hidden = true; return; }
+      if(!n){ n = el('div', 'bubble caption-3'); $('#bubbles').appendChild(n); bubbleNodes[a.id] = n; }
+      if(n.textContent !== a.bubble) n.textContent = a.bubble;
+      n.hidden = false;
+      a.person.head.getWorldPosition(_proj);
+      _proj.y += 0.42;
+      _proj.project(camera);
+      var bx = (_proj.x * 0.5 + 0.5) * rect.w, by = (-_proj.y * 0.5 + 0.5) * rect.h;
+      n.style.transform = 'translate(' + Math.round(bx - n.offsetWidth / 2) + 'px,' + Math.round(by - 24) + 'px)';
+    });
+  }
+  scene3d.syncTags = syncTags;
+
+  /* ---- ввод ---- */
+  var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function pick(clientX, clientY){
+    var r = canvas.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    var hits = ray.intersectObjects(seatsGroup.children.concat(actorsGroup.children), true);
+    for(var i = 0; i < hits.length; i++){
+      var o = hits[i].object;
+      while(o && o.userData.seatIndex === undefined) o = o.parent;
+      if(o && o.userData.seatIndex >= 0) return o.userData.seatIndex;
+    }
+    return -1;
+  }
+  var drag = null;
+  canvas.addEventListener('pointerdown', function(e){
+    drag = {x:e.clientX, y:e.clientY, lastX:e.clientX, moved:false, id:e.pointerId};
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(drag && drag.id === e.pointerId){
+      var dx = e.clientX - drag.lastX;
+      if(Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 5){ drag.moved = true; canvas.classList.add('dragging'); }
+      if(drag.moved){ rotateBy(-dx * 0.22); }
+      drag.lastX = e.clientX;
+    } else {
+      canvas.classList.toggle('hot', pick(e.clientX, e.clientY) >= 0);
+    }
+  });
+  function endDrag(e, cancelled){
+    if(!drag || drag.id !== e.pointerId) return;
+    var wasClick = !drag.moved && !cancelled;
+    drag = null; canvas.classList.remove('dragging');
+    try{ canvas.releasePointerCapture(e.pointerId); }catch(err){}
+    if(wasClick){ var i = pick(e.clientX, e.clientY); if(i >= 0) select(i); }
+  }
+  canvas.addEventListener('pointerup', function(e){ endDrag(e, false); });
+  canvas.addEventListener('pointercancel', function(e){ endDrag(e, true); });
+  canvas.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowLeft'){ rotateBy(-6); e.preventDefault(); }
+    else if(e.key === 'ArrowRight'){ rotateBy(6); e.preventDefault(); }
+  });
+  function holdBtn(id, dir){
+    var b = $(id);
+    b.addEventListener('pointerdown', function(){ if(!REDUCED) hold = dir; rotateBy(dir * 3); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function(n){ b.addEventListener(n, function(){ hold = 0; }); });
+    b.addEventListener('click', function(e){ if(e.detail === 0) rotateBy(dir * 6); });
+    b.addEventListener('blur', function(){ hold = 0; });
+  }
+  holdBtn('#camLeft', -1); holdBtn('#camRight', 1);
+
+  canvas.addEventListener('webglcontextlost', function(e){
+    e.preventDefault(); scene3d.ok = false; running = false;
+    showSceneNote('3D сцена остановлена: графический контекст потерян. Обновите страницу. Статусы работают как обычно.');
+  });
+
+  /* ---- размер и цикл ---- */
+  function resize(){
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if(!w || !h) return;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    fitCamera(w, h);
+    needsRender = true;
+  }
+  if(typeof ResizeObserver === 'function') new ResizeObserver(resize).observe($('#scene'));
+  window.addEventListener('resize', resize);
+
+  var last = performance.now(), running = true, failed = false;
+  function frame(now){
+    if(!running) return;
+    requestAnimationFrame(frame);
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if(document.hidden || failed) return;
+    try{
+      var moved = updateCamera(dt);
+      animate(dt);
+      if(needsRender || moved){
+        renderer.render(scene, camera);
+        syncTags();
+        needsRender = false;
+      }
+    }catch(err){
+      failed = true;
+      showSceneNote('Ошибка отрисовки 3D. Статусы работают как обычно.');
+    }
+  }
+
+  scene3d.setSeats = setSeats;
+  scene3d.applyViews = applyViews;
+  scene3d.requestRender = function(){ needsRender = true; };
+  scene3d.ok = true;
+  placeCamera(); resize();
+  S.seats = S.seats.length ? S.seats : computeSeats();
+  setSeats(S.seats);
+  requestAnimationFrame(frame);
+  $('#sceneNote').hidden = true;
+}
+
+/* ===================== События интерфейса ===================== */
+$('#btnLive').addEventListener('click', function(){ connectLive(); });
+$('#btnSnap').addEventListener('click', function(){ $('#snapInput').click(); });
+$('#snapInput').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  openSnapshotFile(f);
+});
+function setPaused(p){
+  S.paused = !!p || REDUCED; /* при prefers-reduced-motion анимация не включается */
+  var b = $('#btnPause');
+  b.setAttribute('aria-pressed', S.paused ? 'true' : 'false');
+  $('#pauseText').textContent = S.paused ? 'Продолжить анимацию' : 'Пауза анимации';
+  if(scene3d.ok) scene3d.requestRender();
+}
+$('#btnPause').addEventListener('click', function(){ setPaused(!S.paused); });
+
+/* «Собрать на кофе»: только картинка. Реальные процессы и статусы не затрагиваются */
+function gatherCoffee(){
+  var st = $('#coffeeState');
+  if(!scene3d.ok){ st.textContent = 'Трёхмерная сцена недоступна, собирать некого.'; return -1; }
+  if(motionOff()){ st.textContent = 'Анимация остановлена (пауза, статический снимок или уменьшенное движение), поэтому никто не встанет.'; return 0; }
+  var n = scene3d.gather();
+  st.textContent = n > 0
+    ? 'Свободные от работы идут за кофе. Это только картинка, статусы и процессы не изменились.'
+    : 'Сейчас все заняты по свежим событиям или уже на перерыве. Статусы не менялись.';
+  return n;
+}
+$('#btnCoffee').addEventListener('click', function(){ gatherCoffee(); });
+function poseOf(id){
+  var r = null;
+  scene3d.actorStates().forEach(function(x){ if(x.id === id) r = x; });
+  return r;
+}
+
+
+/* Demo is explicitly labelled and never reads agent files. */
+function startDemo(){
+  if(S.demo){
+    stopLoop(); S.snap = null; S.lastError = null; S.seats = computeSeats();
+    setNotice('Демо остановлено. Подключите своих агентов через мастер настройки.', 'info');
+    refresh(); return;
+  }
+  stopLoop(); S.lastError = null; S.demo = true;
+  $('#btnDemo').textContent = 'Остановить демо';
+  var tick = 0;
+  function next(){
+    if(!S.demo || S.paused || REDUCED){
+      if(S.snap && S.demo){ S.snap.generatedMs = Date.now(); refresh(); }
+      if(S.snap) return;
+    }
+    var now = new Date().toISOString();
+    var statuses = ['reading','editing','running','done','waiting','working'];
+    var names = ['Разработчик','Дизайнер','Проверяющий'];
+    var agents = names.map(function(name,i){ return {
+      id:'demo-'+i, name:name, role:'Демо-персонаж', task:'Пример работы над сайтом',
+      status:statuses[(tick+i*2)%statuses.length], event_at:now, source:'demo'
+    }; });
+    applyData({schema_version:1, generated_at:now, agents:agents,
+      events:agents.map(function(a){return {agent_id:a.id, at:now, action:STATUS[a.status].label};}),
+      observer:{mode:'read_only'}}, {static:false});
+    tick++;
+    setNotice('ДЕМОНСТРАЦИЯ: вымышленные события. Реальные агенты не запущены. Для подключения откройте «Как подключить».', 'warn');
+  }
+  next(); S.demoTimer = setInterval(next, 6000);
+}
+$('#btnDemo').addEventListener('click', startDemo);
+
+/* ===================== Запуск ===================== */
+S.seats = computeSeats();
+setNotice(S.notice.text, S.notice.level);
+setPaused(S.paused);
+try{
+  init3D();
+}catch(err){
+  scene3d.ok = false;
+  var why = (err && err.message === 'Библиотека THREE недоступна') ? 'Библиотека для 3D не найдена на этом компьютере.' : 'WebGL не запустился в этом браузере.';
+  showSceneNote('3D комната недоступна. ' + why + ' Статусы сотрудников и журнал работают как обычно.');
+  $('.scene-hint').hidden = true;
+  $('.cam').hidden = true;
+  $('.scene-tools').hidden = true;
+}
+refresh();
+setInterval(refresh, 1000);
+if(location.hash === '#demo') startDemo();
+window.addEventListener('hashchange', function(){ if(location.hash === '#demo' && !S.demo) startDemo(); });
+
+window.agentOffice = {
+  applySnapshot:function(data, opts){ stopLoop(); S.lastError = null; return applyData(data, {static:!!(opts && opts.static)}); },
+  select:function(i){ select(Number(i) | 0); },
+  gatherCoffee:function(){ return gatherCoffee(); },
+  getState:function(){
+    var now = Date.now();
+    return {
+      connection:connView(now).kind,
+      selected:S.selected,
+      paused:S.paused,
+      three:scene3d.ok,
+      seats:S.seats.map(function(seat, i){ return {type:seat.type, id:seat.id || null, kind:S.views[i] ? S.views[i].kind : null, label:S.views[i] ? S.views[i].label : null, typing:S.views[i] ? S.views[i].typing : false, pose:(seat.id && poseOf(seat.id)) ? poseOf(seat.id).pose : null}; }),
+      actors:scene3d.actorStates(),
+      motion:!motionOff()
+    };
+  }
+};
+})();
+</script>
+</body>
+</html>
