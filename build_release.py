@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parent
 PUBLIC_FILES = [
     'index.html', 'guide.html', 'README.md', 'README.en.md', 'LICENSE',
     'THIRD_PARTY_NOTICES.md', 'config.example.json',
-    'docs/INTEGRATIONS.md', 'docs/office-demo.png',
-    'vendor/three.min.js', 'vendor/THREE-LICENSE.txt', 'examples/agent-state.json',
+    'docs/INTEGRATIONS.md', 'docs/office-demo.png', 'docs/BUILD.md', 'CONTRIBUTING.md',
+    'vendor/three.min.js', 'vendor/THREE-LICENSE.txt', 'vendor/TCL-LICENSE.txt', 'examples/agent-state.json',
 ]
 
 
